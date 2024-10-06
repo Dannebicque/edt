@@ -1,28 +1,28 @@
-.course-list {
-    list-style: none;
-    padding: 0;
-}
-
-.course-list li {
-    padding: 8px;
-    margin: 5px 0;
-    background-color: #f0f0f0;
-    cursor: grab;
-}
-
 .grid {
-    display: grid;
-    grid-template-columns: repeat(3, 100px);
-    grid-gap: 10px;
-    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
 }
 
-.grid-slot {
-    width: 100px;
-    height: 100px;
-    background-color: #ddd;
+.day-separator {
+    height: 2px;
+    background-color: #000;
+    margin: 10px 0;
+}
+
+.course-cell {
     display: flex;
-    align-items: center;
     justify-content: center;
+    align-items: center;
+    height: 80px; /* Ajuste la hauteur des cellules */
+    text-align: center;
+}
+
+.droppable {
+    min-height: 80px; /* Hauteur minimale pour les cellules */
     border: 1px solid #ccc;
+    background-color: #f8f9fa;
+}
+
+.text-center {
+    text-align: center;
 }

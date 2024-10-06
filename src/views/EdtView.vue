@@ -1,43 +1,71 @@
 <template>
-  <div>
-    <h3>Cours disponibles</h3>
+  <div class="container">
     <div class="row">
-      <div class="col-2">
-        <ul class="course-list">
-          <li
-            v-for="(course, index) in availableCourses"
-            :key="course.id"
-            :style="{ backgroundColor: course.color }"
-            draggable="true"
-            @dragstart="onDragStart(course)"
-          >
-            {{ course.name }} (Groupe {{ course.group }})
-          </li>
-        </ul>
-      </div>
-      <div class="col-8">
-        <h3>Grille de cours</h3>
+      <!-- Colonne de gauche avec la grille -->
+      <div class="col-md-8">
         <div class="grid">
-          <div v-for="day in 3" :key="day" class="day-grid">
-            <div v-for="line in 6" :key="line" class="line-grid">
+          <!-- Boucle sur les jours -->
+          <div v-for="(day, dayIndex) in grid" :key="dayIndex">
+            <h5>Jour {{ dayIndex + 1 }}</h5>
+            <!-- Séparation des jours avec une bordure -->
+            <div class="day-separator"></div>
+
+            <!-- En-tête avec les noms des groupes -->
+            <div class="row">
+              <div class="col-md-1 text-center font-weight-bold"></div> <!-- Colonne vide pour alignement -->
               <div
                 v-for="group in groups"
                 :key="group"
-                class="grid-slot"
-                @dragover.prevent
-                @drop="onDrop(day - 1, line - 1, group)"
+                class="col-md-1 text-center font-weight-bold"
               >
-                <div
-                  v-if="grid[day - 1][line - 1][group]"
-                  :style="{ backgroundColor: grid[day - 1][line - 1][group].color }"
-                  draggable="true"
-                  @dragstart="onDragStart(grid[day - 1][line - 1][group])"
-                >
-                  {{ grid[day - 1][line - 1][group].name }}
-                </div>
-                <span v-else>Groupe {{ group }}</span>
+                Groupe {{ String.fromCharCode(64 + group) }} <!-- Affiche A, B, C... -->
               </div>
             </div>
+
+            <!-- Boucle sur les 6 lignes pour le jour -->
+            <div v-for="(line, lineIndex) in day" :key="lineIndex" class="row">
+              <!-- Colonne distincte pour les heures de cours -->
+              <div class="col-md-1 border p-2 text-center">
+                {{ timeSlots[lineIndex] }}
+              </div>
+
+              <!-- Boucle sur les groupes (colonnes) -->
+              <div
+                v-for="group in groups"
+                :key="group"
+                class="col-md-1 border p-2"
+                :class="{ 'droppable': true }"
+                @drop.prevent="onDrop(dayIndex, lineIndex, group)"
+                @dragover.prevent
+              >
+                <div v-if="grid[dayIndex][lineIndex][group]" class="course-cell">
+                  <span
+                    :style="{ backgroundColor: grid[dayIndex][lineIndex][group].color }"
+                    class="p-1 text-white"
+                  >
+                    {{ grid[dayIndex][lineIndex][group].name }}<br />
+                    <small>Prof : {{ grid[dayIndex][lineIndex][group].assignedProfessor }}</small>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Colonne de droite avec la liste des cours -->
+      <div class="col-md-4">
+        <h5>Liste des Cours</h5>
+        <div class="list-group">
+          <div
+            v-for="course in availableCourses"
+            :key="course.id"
+            class="list-group-item"
+            draggable="true"
+            @dragstart="onDragStart(course)"
+            :style="{ backgroundColor: course.color, cursor: 'move' }"
+          >
+            {{ course.name }} (Groupe {{ course.group }})
           </div>
         </div>
       </div>
@@ -50,6 +78,7 @@ import { ref } from 'vue'
 
 // Liste des groupes possibles
 const groups = [1, 2, 3, 4, 5, 6]
+const timeSlots = ["8h00", "9h30", "11h00", "14h00", "15h30", "17h00"];
 
 // Liste initiale des professeurs par matière
 const professorsByCourse = {
