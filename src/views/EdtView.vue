@@ -3,6 +3,9 @@
     <div class="row">
       <!-- Colonne de gauche avec la grille -->
       <div class="col-md-8">
+        <button class="btn btn-primary mb-3" @click="assignRooms">
+          Affecter les Salles
+        </button>
         <div class="grid">
           <!-- Boucle sur les jours -->
           <div v-for="(day, dayIndex) in grid" :key="dayIndex">
@@ -12,7 +15,7 @@
 
             <!-- En-tête avec les noms des groupes -->
             <div class="row">
-              <div class="col-md-1 text-center font-weight-bold"></div> <!-- Colonne vide pour alignement -->
+              <div class="col-md-1 text-center font-weight-bold"></div>
               <div
                 v-for="group in groups"
                 :key="group"
@@ -45,6 +48,8 @@
                   >
                     {{ grid[dayIndex][lineIndex][group].name }}<br />
                     <small>Prof : {{ grid[dayIndex][lineIndex][group].assignedProfessor }}</small>
+                    <br />
+                    <small>Salle : {{ grid[dayIndex][lineIndex][group].assignedRoom }}</small>
                   </span>
                 </div>
               </div>
@@ -65,7 +70,7 @@
             @dragstart="onDragStart(course)"
             :style="{ backgroundColor: course.color, cursor: 'move' }"
           >
-            {{ course.name }} (Groupe {{ course.group }})
+            {{ course.name }} (Groupe {{ String.fromCharCode(64 + course.group) }})
           </div>
         </div>
       </div>
@@ -193,4 +198,44 @@ const onDrop = (dayIndex, lineIndex, group) => {
   // Réinitialisation du cours déplacé
   draggedCourse.value = null
 }
+
+const rooms = ["A1", "A2", "A3", "A4", "I1", "I2"]; // Salles disponibles
+
+const assignRooms = () => {
+  const roomAssignments = {};
+
+  // Parcourir chaque jour
+  for (let dayIndex = 0; dayIndex < grid.value.length; dayIndex++) {
+    // Parcourir chaque ligne (heure) pour le jour
+    for (let lineIndex = 0; lineIndex < grid.value[dayIndex].length; lineIndex++) {
+      // Parcourir chaque groupe
+      for (let group = 1; group <= 6; group++) {
+        // Vérifier si le cours existe pour ce groupe
+        if (grid.value[dayIndex][lineIndex][group]) {
+          // Si la salle n'a pas encore été affectée pour cette heure, l'affecter
+          let assignedRoom = null;
+
+          for (const room of rooms) {
+            // Vérifie si la salle est déjà utilisée à cette heure
+            if (!roomAssignments[lineIndex] || !roomAssignments[lineIndex].includes(room)) {
+              assignedRoom = room;
+              break; // Salle disponible trouvée
+            }
+          }
+
+          if (assignedRoom) {
+            // Affecte la salle au cours
+            grid.value[dayIndex][lineIndex][group].assignedRoom = assignedRoom;
+
+            // Ajoute la salle à l'enregistrement pour éviter d'utiliser la même salle à la même heure
+            if (!roomAssignments[lineIndex]) {
+              roomAssignments[lineIndex] = [];
+            }
+            roomAssignments[lineIndex].push(assignedRoom);
+          }
+        }
+      }
+    }
+  }
+};
 </script>
