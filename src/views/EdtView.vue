@@ -37,7 +37,7 @@
                 v-for="group in groups"
                 :key="group"
                 class="col-md-1 border p-2"
-                :class="{ 'droppable': true }"
+                :class="{ 'droppable': true, 'available-slot': isDragging && isSlotHighlighted(dayIndex, lineIndex) }"
                 @drop.prevent="onDrop(dayIndex, lineIndex, group)"
                 @dragover.prevent
               >
@@ -46,8 +46,8 @@
                     :style="{ backgroundColor: grid[dayIndex][lineIndex][group].color }"
                     class="p-1 text-white"
                   >
-                    {{ grid[dayIndex][lineIndex][group].name }}<br />
-                    <small>Prof : {{ grid[dayIndex][lineIndex][group].assignedProfessor }}</small>
+                    {{ grid[dayIndex][lineIndex][group].label }}<br />
+                    <small>Prof : {{ grid[dayIndex][lineIndex][group].professor }}</small>
                     <br />
                     <small>Salle : {{ grid[dayIndex][lineIndex][group].assignedRoom }}</small>
                   </span>
@@ -70,7 +70,7 @@
             @dragstart="onDragStart(course)"
             :style="{ backgroundColor: course.color, cursor: 'move' }"
           >
-            {{ course.name }} (Groupe {{ String.fromCharCode(64 + course.group) }})
+            {{ course.label }} (Groupe {{ String.fromCharCode(64 + course.group) }}) || {{ course.professor }}
           </div>
         </div>
       </div>
@@ -79,48 +79,24 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 
 // Liste des groupes possibles
 const groups = [1, 2, 3, 4, 5, 6]
 const timeSlots = ["8h00", "9h30", "11h00", "14h00", "15h30", "17h00"];
+const availableSlots = ref([])
+const isDragging = ref(false)
 
-// Liste initiale des professeurs par matière
-const professorsByCourse = {
-  Mathématiques: ['Prof A', 'Prof B'],
-  Histoire: ['Prof C'],
-  Physique: ['Prof D'],
-  Chimie: ['Prof D'], // Même prof pour Physique et Chimie
-  Anglais: ['Prof E', 'Prof F', 'Prof G'],
-  Philosophie: ['Prof H', 'Prof I']
-}
-
-// Liste initiale des cours avec leur groupe associé et leurs professeurs
-const initialCourses = [
-  { name: 'Mathématiques', color: '#f28b82' },
-  { name: 'Histoire', color: '#fbbc04' },
-  { name: 'Physique', color: '#34a853' },
-  { name: 'Chimie', color: '#4285f4' },
-  { name: 'Anglais', color: '#ea4335' },
-  { name: 'Philosophie', color: '#a142f4' }
-]
 
 // Génération des créneaux avec groupes et professeurs
-const generateCourseSlots = (courses) => {
-  return courses.flatMap((course) =>
-    groups.map((group) => ({
-      id: `${course.name}-${group}`,
-      name: course.name,
-      color: course.color,
-      group: group,
-      availableProfessors: professorsByCourse[course.name], // Associe les profs à chaque créneau
-      assignedProfessor: null // Professeur affecté au créneau
-    }))
-  )
+const getCourseSlots = async () => {
+  return await fetch('/data/courses.json').then((res) => res.json())
 }
-
-// Variables réactives
-const availableCourses = ref(generateCourseSlots(initialCourses)) // Cours disponibles pour le drag
+const availableCourses = ref() // Cours disponibles pour le drag
+onMounted(async () => {
+  availableCourses.value = await getCourseSlots()
+  console.log(availableCourses.value)
+})
 
 // Grille 3 jours x 6 lignes par jour x 6 groupes
 const grid = ref(
@@ -133,18 +109,48 @@ const draggedCourse = ref(null)
 
 // Méthode pour démarrer le drag d'un cours
 const onDragStart = (course) => {
+  isDragging.value = true;
+  highlightAvailableSlots(course);
   draggedCourse.value = course // Stocke le cours en train d'être déplacé
+}
+
+const  isSlotHighlighted = (dayIndex, slotIndex) => {
+  return availableSlots.value.some(
+    (slot) => slot.dayIndex === dayIndex && slot.slotIndex === slotIndex
+  );
 }
 
 // Méthode pour vérifier la disponibilité des professeurs sur le créneau
 const isProfessorAvailable = (professor, dayIndex, lineIndex) => {
   for (let group of groups) {
     const courseInCell = grid.value[dayIndex][lineIndex][group]
-    if (courseInCell && courseInCell.assignedProfessor === professor) {
+    if (courseInCell && courseInCell.professor === professor) {
       return false // Prof déjà assigné à un créneau sur cette ligne
     }
   }
   return true // Le professeur est disponible
+}
+
+const highlightAvailableSlots = (course) => {
+  // Logique pour trouver les créneaux disponibles pour le professeur du cours
+  availableSlots.value = []
+  grid.value.forEach((day, dayIndex) => {
+    day.forEach((slot, slotIndex) => {
+      console.log(slot)
+      if (isSlotAvailable(slot, course.professor)) {
+        availableSlots.value.push({ dayIndex, slotIndex });
+      }
+    });
+  });
+}
+
+const isSlotAvailable = (slot, professor) => {
+  for (let group of groups) {
+    if (slot[group] && slot[group].professor === professor) {
+      return false;
+    }
+  }
+  return true;
 }
 
 // Méthode pour déposer le cours dans la grille (jour, ligne, groupe)
@@ -160,17 +166,12 @@ const onDrop = (dayIndex, lineIndex, group) => {
   // Vérifie si la case est libre
   if (!grid.value[dayIndex][lineIndex][group]) {
     // Choix d'un professeur disponible pour ce créneau
-    const availableProfessors = draggedCourse.value.availableProfessors.filter((prof) =>
-      isProfessorAvailable(prof, dayIndex, lineIndex)
-    )
+    const availableProfessors = isProfessorAvailable(draggedCourse.value.professor, dayIndex, lineIndex)
 
-    if (availableProfessors.length === 0) {
-      alert('Aucun professeur n’est disponible pour ce créneau.')
+    if (availableProfessors === false) {
+      alert('Professeur déjà assigné sur cette ligne.')
       return
     }
-
-    // Assignation du premier professeur disponible
-    draggedCourse.value.assignedProfessor = availableProfessors[0]
 
     // Placement du cours dans la grille
     grid.value[dayIndex][lineIndex][group] = draggedCourse.value
@@ -197,6 +198,8 @@ const onDrop = (dayIndex, lineIndex, group) => {
 
   // Réinitialisation du cours déplacé
   draggedCourse.value = null
+  isDragging.value = false;
+  availableSlots.value = [];
 }
 
 const rooms = ["A1", "A2", "A3", "A4", "I1", "I2"]; // Salles disponibles

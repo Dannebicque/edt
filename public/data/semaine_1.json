@@ -1,0 +1,29 @@
+{
+  "days": [
+    {
+      "date": "2024-09-02",
+      "blockedSlots": [],
+      "holidays": false
+    },
+    {
+      "date": "2024-09-03",
+      "blockedSlots": [],
+      "holidays": false
+    },
+    {
+      "date": "2024-09-04",
+      "blockedSlots": [],
+      "holidays": false
+    },
+    {
+      "date": "2024-09-05",
+      "blockedSlots": [],
+      "holidays": false
+    },
+    {
+      "date": "2024-09-06",
+      "blockedSlots": [],
+      "holidays": false
+    }
+  ]
+}

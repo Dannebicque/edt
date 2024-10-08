@@ -1,28 +1,32 @@
-.grid {
-    display: flex;
-    flex-direction: column;
-}
+/*.grid {*/
+/*    display: flex;*/
+/*    flex-direction: column;*/
+/*}*/
 
-.day-separator {
-    height: 2px;
-    background-color: #000;
-    margin: 10px 0;
-}
+/*.day-separator {*/
+/*    height: 2px;*/
+/*    background-color: #000;*/
+/*    margin: 10px 0;*/
+/*}*/
 
-.course-cell {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 80px; /* Ajuste la hauteur des cellules */
-    text-align: center;
-}
+/*.course-cell {*/
+/*    display: flex;*/
+/*    justify-content: center;*/
+/*    align-items: center;*/
+/*    height: 80px; !* Ajuste la hauteur des cellules *!*/
+/*    text-align: center;*/
+/*}*/
 
-.droppable {
-    min-height: 80px; /* Hauteur minimale pour les cellules */
-    border: 1px solid #ccc;
-    background-color: #f8f9fa;
-}
+/*.droppable {*/
+/*    min-height: 80px; !* Hauteur minimale pour les cellules *!*/
+/*    border: 1px solid #ccc;*/
+/*    background-color: #f8f9fa;*/
+/*}*/
 
-.text-center {
-    text-align: center;
+/*.text-center {*/
+/*    text-align: center;*/
+/*}*/
+
+.available-slot {
+    background-color: #c8e6c9; /* Une couleur douce pour mettre en surbrillance */
 }

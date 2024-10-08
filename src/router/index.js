@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import EdtView from '@/views/EdtView.vue'
 import ProgressionView from '@/views/ProgressionView.vue'
+import GenereView from '@/views/GenereView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -20,6 +21,11 @@ const router = createRouter({
       path: '/edt',
       name: 'edt',
       component: EdtView
+    },
+    {
+      path: '/genere',
+      name: 'genere',
+      component: GenereView
     },
     {
       path: '/about',

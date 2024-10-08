@@ -1,0 +1,170 @@
+[
+  {
+    "id": "wr101-1",
+    "label": "WR101",
+    "group": 1,
+    "professor": "GGA",
+    "color": "#fbbc04"
+  },
+  {
+    "id": "wr101-2",
+    "label": "WR101",
+    "group": 2,
+    "professor": "GGA",
+    "color": "#fbbc04"
+  },
+  {
+    "id": "wr101-3",
+    "label": "WR101",
+    "group": 3,
+    "professor": "GGA",
+    "color": "#fbbc04"
+  },
+  {
+    "id": "wr101-4",
+    "label": "WR101",
+    "group": 4,
+    "professor": "GGA",
+    "color": "#fbbc04"
+  },
+  {
+    "id": "wr101-5",
+    "label": "WR101",
+    "group": 5,
+    "professor": "GGA",
+    "color": "#fbbc04"
+  },
+  {
+    "id": "wr101-6",
+    "label": "WR101",
+    "group": 6,
+    "professor": "GGA",
+    "color": "#fbbc04"
+  },
+  {
+    "id": "wr102-1",
+    "label": "WR102",
+    "group": 1,
+    "professor": "GGA",
+    "color": "#34a853"
+  },
+  {
+    "id": "wr102-2",
+    "label": "WR102",
+    "group": 2,
+    "professor": "GGA",
+    "color": "#34a853"
+  },
+  {
+    "id": "wr102-3",
+    "label": "WR102",
+    "group": 3,
+    "professor": "GGA",
+    "color": "#34a853"
+  },
+  {
+    "id": "wr102-4",
+    "label": "WR102",
+    "group": 4,
+    "professor": "GGA",
+    "color": "#34a853"
+  },
+  {
+    "id": "wr102-5",
+    "label": "WR102",
+    "group": 5,
+    "professor": "GGA",
+    "color": "#34a853"
+  },
+  {
+    "id": "wr102-6",
+    "label": "WR102",
+    "group": 6,
+    "professor": "GGA",
+    "color": "#34a853"
+  },
+  {
+    "id": "wr103-1",
+    "label": "WR103",
+    "group": 1,
+    "professor": "FME",
+    "color": "#4285f4"
+  },
+  {
+    "id": "wr103-2",
+    "label": "WR103",
+    "group": 2,
+    "professor": "FME",
+    "color": "#4285f4"
+  },
+  {
+    "id": "wr103-3",
+    "label": "WR103",
+    "group": 3,
+    "professor": "FLI",
+    "color": "#4285f4"
+  },
+  {
+    "id": "wr103-4",
+    "label": "WR103",
+    "group": 4,
+    "professor": "FLI",
+    "color": "#4285f4"
+  },
+  {
+    "id": "wr103-5",
+    "label": "WR103",
+    "group": 5,
+    "professor": "RDE",
+    "color": "#4285f4"
+  },
+  {
+    "id": "wr103-6",
+    "label": "WR103",
+    "group": 6,
+    "professor": "RDE",
+    "color": "#4285f4"
+  },
+  {
+    "id": "wr104-1",
+    "label": "WR104",
+    "group": 1,
+    "professor": "FME",
+    "color": "#f28b82"
+  },
+  {
+    "id": "wr104-2",
+    "label": "WR104",
+    "group": 2,
+    "professor": "FME",
+    "color": "#f28b82"
+  },
+  {
+    "id": "wr104-3",
+    "label": "WR104",
+    "group": 3,
+    "professor": "DAN",
+    "color": "#f28b82"
+  },
+  {
+    "id": "wr104-4",
+    "label": "WR104",
+    "group": 4,
+    "professor": "DAN",
+    "color": "#f28b82"
+  },
+  {
+    "id": "wr104-5",
+    "label": "WR104",
+    "group": 5,
+    "professor": "OCH",
+    "color": "#f28b82"
+  },
+  {
+    "id": "wr104-6",
+    "label": "WR104",
+    "group": 6,
+    "professor": "OCH",
+    "color": "#f28b82"
+  }
+]
