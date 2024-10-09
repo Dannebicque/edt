@@ -56,13 +56,16 @@
               }"
               @drop="onDrop($event, day.day, time, semestre, groupNumber)"
               @dragover.prevent
-              :data-key="day.day + '_'+ time +'_'+ semestre +'_'+ groupNumber"
+              :data-key="day.day + '_' + time + '_' + semestre + '_' + groupNumber"
             >
               <span v-if="placedCourses[`${day.day}_${time}_${semestre}_${groupNumber}`]">
                 {{ placedCourses[`${day.day}_${time}_${semestre}_${groupNumber}`].name }} ||
                 {{ placedCourses[`${day.day}_${time}_${semestre}_${groupNumber}`].professor }}
                 <button
-                  v-if="placedCourses[`${day.day}_${time}_${semestre}_${groupNumber}`].name !== 'Blocked'"
+                  v-if="
+                    placedCourses[`${day.day}_${time}_${semestre}_${groupNumber}`].name !==
+                    'Blocked'
+                  "
                   class="remove-btn"
                   @click="
                     removeCourse(
@@ -85,31 +88,36 @@
     <div class="col-3">
       <div class="row">
         <div class="col-6">
-          <select>
-            <option value="1">Semestre 1</option>
-            <option value="3">Semestre 3</option>
-            <option value="5">Semestre 5</option>
+          <select v-model="selectedSemester">
+            <option value="">Semestre</option>
+            <option value="s1">Semestre 1</option>
+            <option value="s3">Semestre 3</option>
+            <option value="s5">Semestre 5</option>
           </select>
         </div>
         <div class="col-6">
-          <select>
-            <option value="DAN">DAN</option>
-            <option value="DAN">DAN</option>
-            <option value="DAN">DAN</option>
-            <option value="DAN">DAN</option>
-            <option value="DAN">DAN</option>
+          <select v-model="selectedProfessor">
+            <option value="">Professeur</option>
+            <option value="M. Dupont">M. Dupont</option>
+            <option value="Mme Durand">Mme Durand</option>
+            <option value="M. Smith">M. Smith</option>
+            <option value="Mme Leroy">Mme Leroy</option>
+            <option value="M. Rousseau">M. Rousseau</option>
           </select>
         </div>
         <div class="col-6">
-          <select>
-            <option value="WR101">WR101</option>
-            <option value="WR101">WR101</option>
-            <option value="WR101">WR101</option>
-            <option value="WR101">WR101</option>
+          <select v-model="selectedCourse">
+            <option value="">Cours</option>
+            <option value="Mathématiques">Mathématiques</option>
+            <option value="Histoire">Histoire</option>
+            <option value="Anglais">Anglais</option>
+            <option value="Sciences">Sciences</option>
+            <option value="Philosophie">Philosophie</option>
           </select>
         </div>
         <div class="col-6">
-          <select>
+          <select v-model="selectedGroup">
+            <option value="">Groupe</option>
             <option value="1">Groupe 1 / S1</option>
             <option value="2">Groupe 2 / S1</option>
             <option value="3">Groupe 3 / S1</option>
@@ -137,15 +145,14 @@
           </select>
         </div>
         <div class="col-6">
-          <button>Appliquer</button>
         </div>
         <div class="col-6">
-          <button>Reset</button>
+          <button @click="resetFilters">Reset</button>
         </div>
       </div>
       <div class="list-group">
         <div
-          v-for="course in availableCourses"
+          v-for="course in filteredCourses"
           :key="course.id"
           class="list-group-item"
           draggable="true"
@@ -161,7 +168,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, computed } from 'vue'
 
 const groupData = ref({
   s1: [1, 2, 3, 4, 5, 6, 7, 8],
@@ -172,6 +179,10 @@ const groupData = ref({
 const timeSlots = ref(['8h00', '9h30', '11h00', '14h00', '15h30', '17h00'])
 const days = ref()
 
+const selectedSemester = ref('')
+const selectedProfessor = ref('')
+const selectedCourse = ref('')
+const selectedGroup = ref('')
 const availableCourses = ref([])
 const restrictedSlots = ref([])
 const currentWeek = ref(1)
@@ -179,7 +190,9 @@ const currentWeek = ref(1)
 onMounted(async () => {
   try {
     //charge le calendrier de la semaine
-    const data = await fetch('/data/semaine_'+currentWeek.value+'.json').then((res) => res.json())
+    const data = await fetch('/data/semaine_' + currentWeek.value + '.json').then((res) =>
+      res.json()
+    )
     restrictedSlots.value = data.restrictedSlots
     days.value = data.days
     applyRestrictions()
@@ -192,6 +205,24 @@ onMounted(async () => {
 })
 
 const placedCourses = ref({})
+
+const filteredCourses = computed(() => {
+  return availableCourses.value.filter(course => {
+    return (
+      (selectedSemester.value === '' || course.group === selectedSemester.value) &&
+      (selectedProfessor.value === '' || course.professor === selectedProfessor.value) &&
+      (selectedCourse.value === '' || course.name === selectedCourse.value) &&
+      (selectedGroup.value === '' || course.groupIndex === parseInt(selectedGroup.value))
+    )
+  })
+})
+
+const resetFilters = () => {
+  selectedSemester.value = ''
+  selectedProfessor.value = ''
+  selectedCourse.value = ''
+  selectedGroup.value = ''
+}
 
 const loadWeek = async () => {
   try {
@@ -220,6 +251,7 @@ const loadNextWeek = () => {
 const onDragStart = (event, course) => {
   event.dataTransfer.setData('courseId', course.id)
   highlightValidCells(course)
+  event.target.addEventListener('dragend', clearHighlight, { once: true })
 }
 
 const onDrop = (event, day, time, semestre, groupNumber) => {
@@ -238,7 +270,7 @@ const onDrop = (event, day, time, semestre, groupNumber) => {
         cell.style.gridColumn = `span ${groupSpan}`
         // Remove the extra cells that are merged
         for (let i = 1; i < groupSpan; i++) {
-          const extraCellSelector = `[data-key="${day}_${time}_${semestre}_${(groupNumber + i)}"]`
+          const extraCellSelector = `[data-key="${day}_${time}_${semestre}_${groupNumber + i}"]`
           const extraCell = document.querySelector(extraCellSelector)
           if (extraCell) {
             extraCell.remove()
@@ -251,14 +283,14 @@ const onDrop = (event, day, time, semestre, groupNumber) => {
       availableCourses.value.splice(courseIndex, 1)
     }
   }
-  clearHighlight()
+  // clearHighlight()
 }
 
 const removeCourse = (day, time, semestre, groupNumber, groupSpan) => {
   const courseKey = `${day}_${time}_${semestre}_${groupNumber}`
   const course = placedCourses.value[courseKey]
   const currentCell = document.querySelector(`[data-key="${courseKey}"]`)
-console.log(courseKey)
+
   if (course) {
     course.time = null
     course.day = null
@@ -274,7 +306,6 @@ console.log(courseKey)
       const cellKey = `${day}_${time}_${semestre}_${groupNumber + i}`
       const cell = currentCell.cloneNode(false)
       cell.setAttribute('data-key', cellKey)
-      console.log(cellKey)
       const parent = currentCell.parentNode
       parent.insertBefore(cell, currentCell.nextSibling)
     }
@@ -325,8 +356,6 @@ const blockSlot = (day, time, semester, groupNumber) => {
 }
 
 const isProfessorAvailable = (professor, day, time) => {
-  console.log(professor, day, time)
-  console.log(placedCourses.value)
   return !Object.values(placedCourses.value).some(
     (course) => course.professor === professor && course.time === time && course.day === day
   )
