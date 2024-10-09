@@ -2,7 +2,19 @@
   <div class="row">
     <div class="col-12">
       <h1>Emploi du temps semaine xxx</h1>
+    </div>
+    <div class="col-6">
       <button @click="assignRoomsAutomatically">Assign Rooms Automatically</button>
+    </div>
+    <div class="col-6">
+      <label>
+        <input type="radio" value="course" v-model="selectedHighlightType" />
+        Par matière
+      </label>
+      <label>
+        <input type="radio" value="professor" v-model="selectedHighlightType" />
+        Par professeur
+      </label>
     </div>
     <div class="col-3 d-grid">
       <button class="btn btn-primary d-block" @click="loadPreviousWeek">Semaine précédente</button>
@@ -56,6 +68,8 @@
                   : ''
               }"
               @drop="onDrop($event, day.day, time, semestre, groupNumber)"
+              @mouseover="highlightSameCourses(day.day, time, semestre, groupNumber)"
+              @mouseout="clearSameCoursesHighlight(day.day, time, semestre, groupNumber)"
               @dragover.prevent
               :data-key="day.day + '_' + time + '_' + semestre + '_' + groupNumber"
             >
@@ -188,6 +202,7 @@ const selectedGroup = ref('')
 const availableCourses = ref([])
 const restrictedSlots = ref([])
 const currentWeek = ref(1)
+const selectedHighlightType = ref('course') // 'course' or 'professor'
 
 onMounted(async () => {
   try {
@@ -416,6 +431,46 @@ const assignRoomsAutomatically = () => {
     }
   })
 }
+
+const highlightSameCourses = (day, time, semestre, groupNumber) => {
+  const courseKey = `${day}_${time}_${semestre}_${groupNumber}`
+  const course = placedCourses.value[courseKey]
+
+  if (course) {
+    const highlightValue = selectedHighlightType.value === 'course' ? course.name : course.professor
+    Object.keys(placedCourses.value).forEach((key) => {
+      if (
+        (selectedHighlightType.value === 'course' && placedCourses.value[key].name === highlightValue) ||
+        (selectedHighlightType.value === 'professor' && placedCourses.value[key].professor === highlightValue)
+      ) {
+        const cell = document.querySelector(`[data-key="${key}"]`)
+        if (cell) {
+          cell.classList.add('highlight-same-course')
+        }
+      }
+    })
+  }
+}
+
+const clearSameCoursesHighlight = (day, time, semestre, groupNumber) => {
+  const courseKey = `${day}_${time}_${semestre}_${groupNumber}`
+  const course = placedCourses.value[courseKey]
+
+  if (course) {
+    const highlightValue = selectedHighlightType.value === 'course' ? course.name : course.professor
+    Object.keys(placedCourses.value).forEach((key) => {
+      if (
+        (selectedHighlightType.value === 'course' && placedCourses.value[key].name === highlightValue) ||
+        (selectedHighlightType.value === 'professor' && placedCourses.value[key].professor === highlightValue)
+      ) {
+        const cell = document.querySelector(`[data-key="${key}"]`)
+        if (cell) {
+          cell.classList.remove('highlight-same-course')
+        }
+      }
+    })
+  }
+}
 </script>
 
 <style scoped>
@@ -460,6 +515,10 @@ const assignRoomsAutomatically = () => {
 
 .grid-cell.highlight {
   background-color: #d1e7dd;
+}
+
+.grid-cell.highlight-same-course {
+  background-color: #ffeb3b !important; /* Highlight color */
 }
 
 .remove-btn {
