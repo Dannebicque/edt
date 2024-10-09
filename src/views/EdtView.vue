@@ -82,7 +82,13 @@
 import { onMounted, ref } from 'vue'
 
 // Liste des groupes possibles
-const groups = [1, 2, 3, 4, 5, 6]
+//const groups = [1, 2, 3, 4, 5, 6]
+const groups = {
+  "s1": [1, 2, 3, 4, 5, 6, 7, 8],
+  "s3": [1, 2, 3, 4, 5, 6, 7, 8],
+  "s5": [1, 2, 3, 4, 5, 6, 7, 8],
+}
+
 const timeSlots = ["8h00", "9h30", "11h00", "14h00", "15h30", "17h00"];
 const availableSlots = ref([])
 const isDragging = ref(false)
