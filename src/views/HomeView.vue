@@ -4,24 +4,24 @@
       <h1>Emploi du temps semaine xxx</h1>
     </div>
     <div class="col-3 d-grid">
-      <button class="btn btn-primary d-block">Semaine précédente</button>
+      <button class="btn btn-primary d-block" @click="loadPreviousWeek">Semaine précédente</button>
     </div>
     <div class="col-3 d-grid">
-      <select class="form-select d-block">
+      <select class="form-select d-block" v-model="currentWeek" @change="loadWeek">
         <option value="1">Semaine 1</option>
         <option value="2">Semaine 2</option>
         <option value="3">Semaine 3</option>
         <option value="4">Semaine 4</option>
       </select>
     </div>
-    <div class="col-3 d-grid">
+    <div class="col-3 d-grid" @click="loadNextWeek">
       <button class="btn btn-primary d-block">Semaine suivante</button>
     </div>
     <div class="col-3">Liste des Cours</div>
 
     <div class="col-9">
-      <div class="grid-container" v-for="day in days" :key="day">
-        <div class="grid-day">{{ day }}</div>
+      <div class="grid-container" v-for="day in days" :key="day.day">
+        <div class="grid-day">{{ day.day }} {{ day.date }}</div>
         <!-- Header Row: Semesters -->
         <div class="grid-header grid-time">Heure</div>
         <div
@@ -49,22 +49,28 @@
               v-for="groupNumber in groups"
               :key="time + semestre + groupNumber"
               class="grid-cell"
-              :style="{backgroundColor:placedCourses[`${time}_${semestre}_${groupNumber}`] ? placedCourses[`${time}_${semestre}_${groupNumber}`].color : ''}"
-              @drop="onDrop($event, time, semestre, groupNumber)"
+              :style="{
+                backgroundColor: placedCourses[`${day.day}_${time}_${semestre}_${groupNumber}`]
+                  ? placedCourses[`${day.day}_${time}_${semestre}_${groupNumber}`].color
+                  : ''
+              }"
+              @drop="onDrop($event, day.day, time, semestre, groupNumber)"
               @dragover.prevent
-              :data-key="time + semestre + groupNumber"
+              :data-key="day.day + time + semestre + groupNumber"
             >
-              <span v-if="placedCourses[`${time}_${semestre}_${groupNumber}`]">
-                {{ placedCourses[`${time}_${semestre}_${groupNumber}`].name }} ||
-                {{ placedCourses[`${time}_${semestre}_${groupNumber}`].professor }}---
+              <span v-if="placedCourses[`${day.day}_${time}_${semestre}_${groupNumber}`]">
+                {{ placedCourses[`${day.day}_${time}_${semestre}_${groupNumber}`].name }} ||
+                {{ placedCourses[`${day.day}_${time}_${semestre}_${groupNumber}`].professor }}
                 <button
+                  v-if="placedCourses[`${day.day}_${time}_${semestre}_${groupNumber}`].name !== 'Blocked'"
                   class="remove-btn"
                   @click="
                     removeCourse(
+                      day,
                       time,
                       semestre,
                       groupNumber,
-                      placedCourses[`${time}_${semestre}_${groupNumber}`].groupCount
+                      placedCourses[`${day.day}_${time}_${semestre}_${groupNumber}`].groupCount
                     )
                   "
                 >
@@ -103,7 +109,7 @@
           </select>
         </div>
         <div class="col-6">
-          <select multiple>
+          <select>
             <option value="1">Groupe 1 / S1</option>
             <option value="2">Groupe 2 / S1</option>
             <option value="3">Groupe 3 / S1</option>
@@ -155,7 +161,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 
 const groupData = ref({
   s1: [1, 2, 3, 4, 5, 6, 7, 8],
@@ -164,7 +170,7 @@ const groupData = ref({
 })
 
 const timeSlots = ref(['8h00', '9h30', '11h00', '14h00', '15h30', '17h00'])
-const days = ref(['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'])
+const days = ref()
 
 const availableCourses = ref([
   {
@@ -213,14 +219,52 @@ const availableCourses = ref([
     color: '#ccffcc'
   }
 ])
+const restrictedSlots = ref([])
+
+onMounted(async () => {
+  try {
+    const data = await fetch('/data/semaine_1.json').then((res) => res.json())
+    restrictedSlots.value = data.restrictedSlots
+    days.value = data.days
+    console.log(data)
+    applyRestrictions()
+  } catch (error) {
+    console.error('Error loading JSON:', error)
+  }
+})
 
 const placedCourses = ref({})
+const currentWeek = ref(1)
+
+const loadWeek = async () => {
+  try {
+    const data = await fetch(`/data/semaine_${currentWeek.value}.json`).then((res) => res.json())
+    restrictedSlots.value = data.restrictedSlots
+    days.value = data.days
+    placedCourses.value = {}
+    applyRestrictions()
+  } catch (error) {
+    console.error('Error loading JSON:', error)
+  }
+}
+
+const loadPreviousWeek = () => {
+  if (currentWeek.value > 1) {
+    currentWeek.value -= 1
+    loadWeek()
+  }
+}
+
+const loadNextWeek = () => {
+  currentWeek.value += 1
+  loadWeek()
+}
 
 const onDragStart = (event, course) => {
   event.dataTransfer.setData('courseId', course.id)
 }
 
-const onDrop = (event, time, semestre, groupNumber) => {
+const onDrop = (event, day, time, semestre, groupNumber) => {
   const courseId = event.dataTransfer.getData('courseId')
   const courseIndex = availableCourses.value.findIndex((c) => c.id == courseId)
   const course = availableCourses.value[courseIndex]
@@ -231,37 +275,81 @@ const onDrop = (event, time, semestre, groupNumber) => {
 
     if (groupNumber <= groupData.value[semestre].length - groupSpan + 1) {
       // Place the course in all necessary cells
-      const cellSelector = `[data-key="${time + semestre + groupNumber}"]`
+      const cellSelector = `[data-key="${day + time + semestre + groupNumber}"]`
       const cell = document.querySelector(cellSelector)
       if (cell) {
         cell.style.gridColumn = `span ${groupSpan}`
         //cell.innerHTML = `${course.name} || ${course.professor}`
         // Remove the extra cells that are merged
         for (let i = 1; i < groupSpan; i++) {
-          const extraCellSelector = `[data-key="${time + semestre + (groupNumber + i)}"]`
+          const extraCellSelector = `[data-key="${day + time + semestre + (groupNumber + i)}"]`
           const extraCell = document.querySelector(extraCellSelector)
           if (extraCell) {
             extraCell.remove()
           }
         }
       }
-      placedCourses.value[`${time}_${semestre}_${groupNumber}`] = course
+      placedCourses.value[`${day}_${time}_${semestre}_${groupNumber}`] = course
       availableCourses.value.splice(courseIndex, 1)
     }
   }
 }
 
-const removeCourse = (time, semestre, groupNumber, groupSpan) => {
-  const courseKey = `${time}_${semestre}_${groupNumber}`
+const removeCourse = (day, time, semestre, groupNumber, groupSpan) => {
+  const courseKey = `${day}_${time}_${semestre}_${groupNumber}`
   const course = placedCourses.value[courseKey]
 
   if (course) {
     availableCourses.value.push(course)
     // Remove the course from all associated cells and add empty cells back
     for (let i = 0; i < groupSpan; i++) {
-      delete placedCourses.value[`${time}_${semestre}_${groupNumber + i}`]
+      delete placedCourses.value[`${day}_${time}_${semestre}_${groupNumber + i}`]
     }
   }
+}
+
+const applyRestrictions = () => {
+  restrictedSlots.value.forEach((slot) => {
+    const { type, slot: timeSlot, semester, days, groups, period } = slot
+
+    days.forEach((day) => {
+      if (type === 'generic') {
+        // dans ce cas tous les semestres, tous les groupes
+        Object.keys(groupData.value).forEach((semester) => {
+          groupData.value[semester].forEach((groupNumber) => {
+            blockSlot(day, timeSlot, semester, groupNumber)
+          })
+        })
+      } else if (type === 'semester') {
+        // dans ce cas tous les groupes d'un semestre
+        groupData.value[semester].forEach((groupNumber) => {
+          blockSlot(day, timeSlot, semester, groupNumber)
+        })
+      } else if (type === 'group') {
+        groups.forEach((groupNumber) => {
+          blockSlot(day, timeSlot, semester, groupNumber)
+        })
+      } else if (type === 'half-day' || type === 'full-day') {
+        const times =
+          type === 'half-day'
+            ? period === 'morning'
+              ? ['8h00', '9h30', '11h00']
+              : ['14h00', '15h30', '17h00']
+            : ['8h00', '9h30', '11h00', '14h00', '15h30', '17h00']
+        times.forEach((time) => {
+          groupData.value[semester].forEach((groupNumber) => {
+            blockSlot(day, time, semester, groupNumber)
+          })
+        })
+      }
+    })
+  })
+}
+
+const blockSlot = (day, time, semester, groupNumber) => {
+  const cellKey = `${day}_${time}_${semester}_${groupNumber}`
+  console.log(cellKey)
+  placedCourses.value[cellKey] = { name: 'Blocked', color: '#ffcccc' }
 }
 </script>
 
