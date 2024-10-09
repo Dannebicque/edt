@@ -313,6 +313,7 @@ const removeCourse = (day, time, semestre, groupNumber, groupSpan) => {
     course.day = null
     availableCourses.value.push(course)
     currentCell.style = ''
+    currentCell.classList.remove('highlight-same-course')
 
     // Remove the course from all associated cells and add empty cells back
     for (let i = 0; i < groupSpan; i++) {
