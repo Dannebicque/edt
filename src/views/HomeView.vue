@@ -66,7 +66,7 @@
                   class="remove-btn"
                   @click="
                     removeCourse(
-                      day,
+                      day.day,
                       time,
                       semestre,
                       groupNumber,
@@ -172,69 +172,26 @@ const groupData = ref({
 const timeSlots = ref(['8h00', '9h30', '11h00', '14h00', '15h30', '17h00'])
 const days = ref()
 
-const availableCourses = ref([
-  {
-    id: 1,
-    name: 'Mathématiques',
-    professor: 'M. Dupont',
-    group: 's1',
-    groupIndex: 1,
-    groupCount: 1,
-    color: '#cce5ff'
-  },
-  {
-    id: 2,
-    name: 'Histoire',
-    professor: 'Mme Durand',
-    group: 's3',
-    groupIndex: 3,
-    groupCount: 2,
-    color: '#d4edda'
-  },
-  {
-    id: 3,
-    name: 'Anglais',
-    professor: 'M. Smith',
-    group: 's5',
-    groupIndex: 1,
-    groupCount: 8,
-    color: '#f8d7da'
-  },
-  {
-    id: 4,
-    name: 'Sciences',
-    professor: 'Mme Leroy',
-    group: 's1',
-    groupIndex: 5,
-    groupCount: 2,
-    color: '#ffcccc'
-  },
-  {
-    id: 5,
-    name: 'Philosophie',
-    professor: 'M. Rousseau',
-    group: 's3',
-    groupIndex: 1,
-    groupCount: 4,
-    color: '#ccffcc'
-  }
-])
+const availableCourses = ref([])
 const restrictedSlots = ref([])
+const currentWeek = ref(1)
 
 onMounted(async () => {
   try {
-    const data = await fetch('/data/semaine_1.json').then((res) => res.json())
+    //charge le calendrier de la semaine
+    const data = await fetch('/data/semaine_'+currentWeek.value+'.json').then((res) => res.json())
     restrictedSlots.value = data.restrictedSlots
     days.value = data.days
-    console.log(data)
     applyRestrictions()
+
+    //charge les cours disponibles
+    availableCourses.value = await fetch('/data/courses.json').then((res) => res.json())
   } catch (error) {
     console.error('Error loading JSON:', error)
   }
 })
 
 const placedCourses = ref({})
-const currentWeek = ref(1)
 
 const loadWeek = async () => {
   try {
@@ -271,7 +228,6 @@ const onDrop = (event, day, time, semestre, groupNumber) => {
   const course = availableCourses.value[courseIndex]
 
   if (course && course.group === semestre && course.groupIndex === groupNumber) {
-    const startGroup = groupNumber
     const groupSpan = course.groupCount
 
     if (groupNumber <= groupData.value[semestre].length - groupSpan + 1) {
@@ -280,7 +236,6 @@ const onDrop = (event, day, time, semestre, groupNumber) => {
       const cell = document.querySelector(cellSelector)
       if (cell) {
         cell.style.gridColumn = `span ${groupSpan}`
-        //cell.innerHTML = `${course.name} || ${course.professor}`
         // Remove the extra cells that are merged
         for (let i = 1; i < groupSpan; i++) {
           const extraCellSelector = `[data-key="${day}_${time}_${semestre}_${(groupNumber + i)}"]`
@@ -290,6 +245,8 @@ const onDrop = (event, day, time, semestre, groupNumber) => {
           }
         }
       }
+      course.time = time
+      course.day = day
       placedCourses.value[`${day}_${time}_${semestre}_${groupNumber}`] = course
       availableCourses.value.splice(courseIndex, 1)
     }
@@ -302,6 +259,8 @@ const removeCourse = (day, time, semestre, groupNumber, groupSpan) => {
   const course = placedCourses.value[courseKey]
 
   if (course) {
+    course.time = null
+    course.day = null
     availableCourses.value.push(course)
     // Remove the course from all associated cells and add empty cells back
     for (let i = 0; i < groupSpan; i++) {
@@ -353,16 +312,24 @@ const blockSlot = (day, time, semester, groupNumber) => {
   placedCourses.value[cellKey] = { name: 'Blocked', color: '#ffcccc' }
 }
 
+const isProfessorAvailable = (professor, day, time) => {
+  console.log(professor, day, time)
+  console.log(placedCourses.value)
+  return !Object.values(placedCourses.value).some(
+    (course) => course.professor === professor && course.time === time && course.day === day
+  )
+}
 const highlightValidCells = (course) => {
-  const { group, groupIndex, groupCount } = course
+  const { group, groupIndex, groupCount, professor } = course
   days.value.forEach((day) => {
     timeSlots.value.forEach((time) => {
-      for (let i = 0; i < groupCount; i++) {
-        const cellKey = `${day.day}_${time}_${group}_${groupIndex + i}`
-        console.log(cellKey)
-        const cell = document.querySelector(`[data-key="${cellKey}"]`)
-        if (cell && !placedCourses.value[cellKey]) {
-          cell.classList.add('highlight')
+      if (isProfessorAvailable(professor, day.day, time)) {
+        for (let i = 0; i < groupCount; i++) {
+          const cellKey = `${day.day}_${time}_${group}_${groupIndex + i}`
+          const cell = document.querySelector(`[data-key="${cellKey}"]`)
+          if (cell && !placedCourses.value[cellKey]) {
+            cell.classList.add('highlight')
+          }
         }
       }
     })
