@@ -56,7 +56,7 @@
               }"
               @drop="onDrop($event, day.day, time, semestre, groupNumber)"
               @dragover.prevent
-              :data-key="day.day + time + semestre + groupNumber"
+              :data-key="day.day + '_'+ time +'_'+ semestre +'_'+ groupNumber"
             >
               <span v-if="placedCourses[`${day.day}_${time}_${semestre}_${groupNumber}`]">
                 {{ placedCourses[`${day.day}_${time}_${semestre}_${groupNumber}`].name }} ||
@@ -262,6 +262,7 @@ const loadNextWeek = () => {
 
 const onDragStart = (event, course) => {
   event.dataTransfer.setData('courseId', course.id)
+  highlightValidCells(course)
 }
 
 const onDrop = (event, day, time, semestre, groupNumber) => {
@@ -275,14 +276,14 @@ const onDrop = (event, day, time, semestre, groupNumber) => {
 
     if (groupNumber <= groupData.value[semestre].length - groupSpan + 1) {
       // Place the course in all necessary cells
-      const cellSelector = `[data-key="${day + time + semestre + groupNumber}"]`
+      const cellSelector = `[data-key="${day}_${time}_${semestre}_${groupNumber}"]`
       const cell = document.querySelector(cellSelector)
       if (cell) {
         cell.style.gridColumn = `span ${groupSpan}`
         //cell.innerHTML = `${course.name} || ${course.professor}`
         // Remove the extra cells that are merged
         for (let i = 1; i < groupSpan; i++) {
-          const extraCellSelector = `[data-key="${day + time + semestre + (groupNumber + i)}"]`
+          const extraCellSelector = `[data-key="${day}_${time}_${semestre}_${(groupNumber + i)}"]`
           const extraCell = document.querySelector(extraCellSelector)
           if (extraCell) {
             extraCell.remove()
@@ -293,6 +294,7 @@ const onDrop = (event, day, time, semestre, groupNumber) => {
       availableCourses.value.splice(courseIndex, 1)
     }
   }
+  clearHighlight()
 }
 
 const removeCourse = (day, time, semestre, groupNumber, groupSpan) => {
@@ -348,8 +350,30 @@ const applyRestrictions = () => {
 
 const blockSlot = (day, time, semester, groupNumber) => {
   const cellKey = `${day}_${time}_${semester}_${groupNumber}`
-  console.log(cellKey)
   placedCourses.value[cellKey] = { name: 'Blocked', color: '#ffcccc' }
+}
+
+const highlightValidCells = (course) => {
+  const { group, groupIndex, groupCount } = course
+  days.value.forEach((day) => {
+    timeSlots.value.forEach((time) => {
+      for (let i = 0; i < groupCount; i++) {
+        const cellKey = `${day.day}_${time}_${group}_${groupIndex + i}`
+        console.log(cellKey)
+        const cell = document.querySelector(`[data-key="${cellKey}"]`)
+        if (cell && !placedCourses.value[cellKey]) {
+          cell.classList.add('highlight')
+        }
+      }
+    })
+  })
+}
+
+const clearHighlight = () => {
+  const highlightedCells = document.querySelectorAll('.highlight')
+  highlightedCells.forEach((cell) => {
+    cell.classList.remove('highlight')
+  })
 }
 </script>
 
@@ -391,6 +415,10 @@ const blockSlot = (day, time, semester, groupNumber) => {
   border: 1px solid #000;
   background-color: #fff;
   grid-column: span 1;
+}
+
+.grid-cell.highlight {
+  background-color: #d1e7dd;
 }
 
 .remove-btn {
