@@ -2,6 +2,7 @@
   <div class="row">
     <div class="col-12">
       <h1>Emploi du temps semaine xxx</h1>
+      <button @click="assignRoomsAutomatically">Assign Rooms Automatically</button>
     </div>
     <div class="col-3 d-grid">
       <button class="btn btn-primary d-block" @click="loadPreviousWeek">Semaine précédente</button>
@@ -60,7 +61,9 @@
             >
               <span v-if="placedCourses[`${day.day}_${time}_${semestre}_${groupNumber}`]">
                 {{ placedCourses[`${day.day}_${time}_${semestre}_${groupNumber}`].name }} ||
-                {{ placedCourses[`${day.day}_${time}_${semestre}_${groupNumber}`].professor }}
+                {{ placedCourses[`${day.day}_${time}_${semestre}_${groupNumber}`].professor }} ||
+                {{ placedCourses[`${day.day}_${time}_${semestre}_${groupNumber}`].room }}
+
                 <button
                   v-if="
                     placedCourses[`${day.day}_${time}_${semestre}_${groupNumber}`].name !==
@@ -144,8 +147,7 @@
             <option value="24">Groupe 8 / S5</option>
           </select>
         </div>
-        <div class="col-6">
-        </div>
+        <div class="col-6"></div>
         <div class="col-6">
           <button @click="resetFilters">Reset</button>
         </div>
@@ -207,7 +209,7 @@ onMounted(async () => {
 const placedCourses = ref({})
 
 const filteredCourses = computed(() => {
-  return availableCourses.value.filter(course => {
+  return availableCourses.value.filter((course) => {
     return (
       (selectedSemester.value === '' || course.group === selectedSemester.value) &&
       (selectedProfessor.value === '' || course.professor === selectedProfessor.value) &&
@@ -381,6 +383,37 @@ const clearHighlight = () => {
   const highlightedCells = document.querySelectorAll('.highlight')
   highlightedCells.forEach((cell) => {
     cell.classList.remove('highlight')
+  })
+}
+
+const assignRoomsAutomatically = () => {
+  const rooms = ['Room A', 'Room B', 'Room C', 'Room D'] // Example room list
+  const assignedRooms = {} // Map to track assigned rooms for each time slot
+
+  Object.keys(placedCourses.value).forEach((key) => {
+    const course = placedCourses.value[key]
+    if (course && !course.room) {
+      const timeSlot = `${course.day}_${course.time}`
+      if (!assignedRooms[timeSlot]) {
+        assignedRooms[timeSlot] = new Set()
+      }
+
+      // Find an available room
+      let roomAssigned = false
+      for (let room of rooms) {
+        if (!assignedRooms[timeSlot].has(room)) {
+          course.room = room
+          assignedRooms[timeSlot].add(room)
+          roomAssigned = true
+          break
+        }
+      }
+
+      // If no room is available, you can handle it as needed (e.g., log an error)
+      if (!roomAssigned) {
+        console.error(`No available room for course ${course.name} at ${timeSlot}`)
+      }
+    }
   })
 }
 </script>
