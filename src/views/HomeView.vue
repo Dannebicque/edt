@@ -257,14 +257,26 @@ const onDrop = (event, day, time, semestre, groupNumber) => {
 const removeCourse = (day, time, semestre, groupNumber, groupSpan) => {
   const courseKey = `${day}_${time}_${semestre}_${groupNumber}`
   const course = placedCourses.value[courseKey]
-
+  const currentCell = document.querySelector(`[data-key="${courseKey}"]`)
+console.log(courseKey)
   if (course) {
     course.time = null
     course.day = null
     availableCourses.value.push(course)
+    currentCell.style = ''
+
     // Remove the course from all associated cells and add empty cells back
     for (let i = 0; i < groupSpan; i++) {
       delete placedCourses.value[`${day}_${time}_${semestre}_${groupNumber + i}`]
+    }
+    // Recreate the missing cells
+    for (let i = 1; i < groupSpan; i++) {
+      const cellKey = `${day}_${time}_${semestre}_${groupNumber + i}`
+      const cell = currentCell.cloneNode(false)
+      cell.setAttribute('data-key', cellKey)
+      console.log(cellKey)
+      const parent = currentCell.parentNode
+      parent.insertBefore(cell, currentCell.nextSibling)
     }
   }
 }
@@ -348,7 +360,7 @@ const clearHighlight = () => {
 .grid-container {
   display: grid;
   grid-template-columns: 100px repeat(24, 1fr);
-  gap: 1px;
+  gap: 0;
   width: 100%;
   border: 1px solid #000;
 }
