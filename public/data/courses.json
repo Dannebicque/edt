@@ -1,8 +1,8 @@
 [
   {
     "id": 1,
-    "name": "Mathématiques",
-    "professor": "M. Dupont",
+    "name": "WR118",
+    "professor": "RHU",
     "group": "s1",
     "groupIndex": 1,
     "groupCount": 1,
@@ -10,8 +10,8 @@
   },
   {
     "id": 2,
-    "name": "Histoire",
-    "professor": "Mme Durand",
+    "name": "WR119",
+    "professor": "JLE",
     "group": "s3",
     "groupIndex": 1,
     "groupCount": 2,
@@ -19,8 +19,8 @@
   },
   {
     "id": 6,
-    "name": "Histoire",
-    "professor": "Mme Durand",
+    "name": "WR104",
+    "professor": "JLE",
     "group": "s3",
     "groupIndex": 3,
     "groupCount": 2,
@@ -28,8 +28,8 @@
   },
   {
     "id": 7,
-    "name": "Histoire",
-    "professor": "Mme Durand",
+    "name": "WR104",
+    "professor": "JLE",
     "group": "s3",
     "groupIndex": 5,
     "groupCount": 2,
@@ -37,8 +37,8 @@
   },
   {
     "id": 8,
-    "name": "Histoire",
-    "professor": "M. Smith",
+    "name": "WR104",
+    "professor": "RDE",
     "group": "s3",
     "groupIndex": 7,
     "groupCount": 2,
@@ -46,8 +46,8 @@
   },
   {
     "id": 3,
-    "name": "Anglais",
-    "professor": "M. Smith",
+    "name": "WR101",
+    "professor": "GGA",
     "group": "s5",
     "groupIndex": 1,
     "groupCount": 8,
@@ -55,8 +55,8 @@
   },
   {
     "id": 4,
-    "name": "Sciences",
-    "professor": "Mme Leroy",
+    "name": "WR114",
+    "professor": "PGO",
     "group": "s1",
     "groupIndex": 5,
     "groupCount": 2,
@@ -64,8 +64,8 @@
   },
   {
     "id": 5,
-    "name": "Philosophie",
-    "professor": "M. Rousseau",
+    "name": "WR113",
+    "professor": "FME",
     "group": "s3",
     "groupIndex": 1,
     "groupCount": 4,

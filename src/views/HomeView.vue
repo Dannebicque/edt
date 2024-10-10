@@ -249,7 +249,16 @@ const displayCourse = (course) => {
 }
 
 const displayCourseListe = (course) => {
-  return `${course.name} <br> ${course.professor} <br> ${course.group} <br> Groupe ${course.groupIndex}`
+  let groupe = ''
+  if (course.groupCount === 1) {
+    groupe = 'TP ' + String.fromCharCode(64 + course.groupIndex)
+  } else if (course.groupCount === 2) {
+    groupe = 'TD ' + String.fromCharCode(64 + course.groupIndex) + String.fromCharCode(65 + course.groupIndex)
+  } else {
+    groupe = 'CM'
+  }
+
+  return `${course.name} <br> ${course.professor} <br> ${course.group} <br> ${groupe}`
 }
 
 const resetFilters = () => {
