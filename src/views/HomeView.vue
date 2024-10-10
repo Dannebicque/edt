@@ -21,10 +21,7 @@
     </div>
     <div class="col-3 d-grid">
       <select class="form-select d-block" v-model="currentWeek" @change="loadWeek">
-        <option value="1">Semaine 1</option>
-        <option value="2">Semaine 2</option>
-        <option value="3">Semaine 3</option>
-        <option value="4">Semaine 4</option>
+        <option v-for="n in 42" :key="n" :value="n">Semaine {{ n }}</option>
       </select>
     </div>
     <div class="col-3 d-grid" @click="loadNextWeek">
@@ -34,7 +31,7 @@
 
     <div class="col-9">
       <div class="grid-container" v-for="day in days" :key="day.day">
-        <div class="grid-day">{{ day.day }} {{ day.date }}</div>
+        <div class="grid-day">{{ day.day }} {{ day.dateFr }}</div>
         <!-- Header Row: Semesters -->
         <div class="grid-header grid-time">Heure</div>
         <div
@@ -74,14 +71,15 @@
               :data-key="day.day + '_' + time + '_' + semestre + '_' + groupNumber"
             >
               <span v-if="placedCourses[`${day.day}_${time}_${semestre}_${groupNumber}`]">
-                {{ placedCourses[`${day.day}_${time}_${semestre}_${groupNumber}`].name }} ||
-                {{ placedCourses[`${day.day}_${time}_${semestre}_${groupNumber}`].professor }} ||
-                {{ placedCourses[`${day.day}_${time}_${semestre}_${groupNumber}`].room }}
+<!--                {{ placedCourses[`${day.day}_${time}_${semestre}_${groupNumber}`].name }} ||-->
+<!--                {{ placedCourses[`${day.day}_${time}_${semestre}_${groupNumber}`].professor }} ||-->
+<!--                {{ placedCourses[`${day.day}_${time}_${semestre}_${groupNumber}`].room }}-->
+
+                {{ displayCourse(placedCourses[`${day.day}_${time}_${semestre}_${groupNumber}`]) }}
 
                 <button
                   v-if="
-                    placedCourses[`${day.day}_${time}_${semestre}_${groupNumber}`].name !==
-                    'Blocked'
+                    placedCourses[`${day.day}_${time}_${semestre}_${groupNumber}`].blocked === false
                   "
                   class="remove-btn"
                   @click="
@@ -166,17 +164,29 @@
           <button @click="resetFilters">Reset</button>
         </div>
       </div>
-      <div class="list-group">
+<!--      <div class="list-group">-->
+<!--        <div-->
+<!--          v-for="course in filteredCourses"-->
+<!--          :key="course.id"-->
+<!--          class="list-group-item"-->
+<!--          draggable="true"-->
+<!--          @dragstart="onDragStart($event, course)"-->
+<!--          :style="{ backgroundColor: course.color, cursor: 'move' }"-->
+
+<!--        >-->
+<!--          <span v-html="displayCourseListe(course)" class="course-available"></span>-->
+<!--        </div>-->
+<!--      </div>-->
+      <div class="list-group grid-container-available">
         <div
           v-for="course in filteredCourses"
           :key="course.id"
-          class="list-group-item"
+          class="list-group-item grid-item-available"
+          :style="{ gridColumn: `span ${course.groupCount}`, backgroundColor: course.color, cursor: 'move' }"
           draggable="true"
           @dragstart="onDragStart($event, course)"
-          :style="{ backgroundColor: course.color, cursor: 'move' }"
         >
-          {{ course.name }} || {{ course.professor }} || {{ course.group }} || Groupe
-          {{ course.groupIndex }}
+          <span v-html="displayCourseListe(course)" class="course-available"></span>
         </div>
       </div>
     </div>
@@ -185,6 +195,8 @@
 
 <script setup>
 import { onMounted, ref, computed } from 'vue'
+
+const baseUrl = import.meta.env.VITE_BASE_URL
 
 const groupData = ref({
   s1: [1, 2, 3, 4, 5, 6, 7, 8],
@@ -207,12 +219,7 @@ const selectedHighlightType = ref('course') // 'course' or 'professor'
 onMounted(async () => {
   try {
     //charge le calendrier de la semaine
-    const data = await fetch('/data/semaine_' + currentWeek.value + '.json').then((res) =>
-      res.json()
-    )
-    restrictedSlots.value = data.restrictedSlots
-    days.value = data.days
-    applyRestrictions()
+    _getSemaines(currentWeek.value)
 
     //charge les cours disponibles
     availableCourses.value = await fetch('/data/courses.json').then((res) => res.json())
@@ -234,6 +241,17 @@ const filteredCourses = computed(() => {
   })
 })
 
+const displayCourse = (course) => {
+  if (course.blocked === true) {
+    return course.name
+  }
+  return `${course.name} || ${course.professor} || ${course.room}`
+}
+
+const displayCourseListe = (course) => {
+  return `${course.name} <br> ${course.professor} <br> ${course.group} <br> Groupe ${course.groupIndex}`
+}
+
 const resetFilters = () => {
   selectedSemester.value = ''
   selectedProfessor.value = ''
@@ -241,13 +259,17 @@ const resetFilters = () => {
   selectedGroup.value = ''
 }
 
+const _getSemaines = async(numSemaine) => {
+  const data = await fetch(baseUrl + '/get-semaine/' + numSemaine).then((res) => res.json())
+  restrictedSlots.value = data.restrictedSlots
+  days.value = data.days
+  placedCourses.value = {}
+  applyRestrictions()
+}
+
 const loadWeek = async () => {
   try {
-    const data = await fetch(`/data/semaine_${currentWeek.value}.json`).then((res) => res.json())
-    restrictedSlots.value = data.restrictedSlots
-    days.value = data.days
-    placedCourses.value = {}
-    applyRestrictions()
+    _getSemaines(currentWeek.value)
   } catch (error) {
     console.error('Error loading JSON:', error)
   }
@@ -296,6 +318,7 @@ const onDrop = (event, day, time, semestre, groupNumber) => {
       }
       course.time = time
       course.day = day
+      course.blocked = false
       placedCourses.value[`${day}_${time}_${semestre}_${groupNumber}`] = course
       availableCourses.value.splice(courseIndex, 1)
     }
@@ -332,24 +355,25 @@ const removeCourse = (day, time, semestre, groupNumber, groupSpan) => {
 
 const applyRestrictions = () => {
   restrictedSlots.value.forEach((slot) => {
-    const { type, slot: timeSlot, semester, days, groups, period } = slot
+    const { type, slot: timeSlot, semester, days, groups, period, motif } = slot
 
     days.forEach((day) => {
+
       if (type === 'generic') {
         // dans ce cas tous les semestres, tous les groupes
         Object.keys(groupData.value).forEach((semester) => {
           groupData.value[semester].forEach((groupNumber) => {
-            blockSlot(day, timeSlot, semester, groupNumber)
+            blockSlot(day, timeSlot, semester, groupNumber, motif)
           })
         })
       } else if (type === 'semester') {
         // dans ce cas tous les groupes d'un semestre
         groupData.value[semester].forEach((groupNumber) => {
-          blockSlot(day, timeSlot, semester, groupNumber)
+          blockSlot(day, timeSlot, semester, groupNumber, motif)
         })
       } else if (type === 'group') {
         groups.forEach((groupNumber) => {
-          blockSlot(day, timeSlot, semester, groupNumber)
+          blockSlot(day, timeSlot, semester, groupNumber, motif)
         })
       } else if (type === 'half-day' || type === 'full-day') {
         const times =
@@ -360,7 +384,7 @@ const applyRestrictions = () => {
             : ['8h00', '9h30', '11h00', '14h00', '15h30', '17h00']
         times.forEach((time) => {
           groupData.value[semester].forEach((groupNumber) => {
-            blockSlot(day, time, semester, groupNumber)
+            blockSlot(day, time, semester, groupNumber, motif)
           })
         })
       }
@@ -368,9 +392,9 @@ const applyRestrictions = () => {
   })
 }
 
-const blockSlot = (day, time, semester, groupNumber) => {
+const blockSlot = (day, time, semester, groupNumber, motif = null) => {
   const cellKey = `${day}_${time}_${semester}_${groupNumber}`
-  placedCourses.value[cellKey] = { name: 'Blocked', color: '#ffcccc' }
+  placedCourses.value[cellKey] = { name: motif ?? 'blocked', color: '#ffcccc', blocked: true }
 }
 
 const isProfessorAvailable = (professor, day, time) => {
@@ -520,6 +544,24 @@ const clearSameCoursesHighlight = (day, time, semestre, groupNumber) => {
 
 .grid-cell.highlight-same-course {
   background-color: #ffeb3b !important; /* Highlight color */
+}
+
+.course-available {
+  display: block;
+  padding: 8px;
+}
+
+.grid-container-available {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr); /* Ajustez le nombre de colonnes selon vos besoins */
+  gap: 10px;
+}
+
+.grid-item-available {
+  padding: 8px;
+  border: 1px solid #000;
+  background-color: #fff;
+  text-align: center;
 }
 
 .remove-btn {
