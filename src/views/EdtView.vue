@@ -1,250 +1,652 @@
 <template>
-  <div class="container">
-    <div class="row">
-      <!-- Colonne de gauche avec la grille -->
-      <div class="col-md-8">
-        <button class="btn btn-primary mb-3" @click="assignRooms">
-          Affecter les Salles
-        </button>
-        <div class="grid">
-          <!-- Boucle sur les jours -->
-          <div v-for="(day, dayIndex) in grid" :key="dayIndex">
-            <h5>Jour {{ dayIndex + 1 }}</h5>
-            <!-- Séparation des jours avec une bordure -->
-            <div class="day-separator"></div>
+  <div class="row">
+    <div class="col-12">
+      <h1>Emploi du temps semaine xxx</h1>
+    </div>
+    <div class="col-6">
+      <button @click="assignRoomsAutomatically">Assign Rooms Automatically</button>
+    </div>
+    <div class="col-6">
+      <label>
+        <input type="radio" value="course" v-model="selectedHighlightType" />
+        Par matière
+      </label>
+      <label>
+        <input type="radio" value="professor" v-model="selectedHighlightType" />
+        Par professeur
+      </label>
+    </div>
+    <div class="col-3 d-grid">
+      <button class="btn btn-primary d-block" @click="loadPreviousWeek">Semaine précédente</button>
+    </div>
+    <div class="col-3 d-grid">
+      <select class="form-select d-block" v-model="currentWeek" @change="loadWeek">
+        <option v-for="n in 42" :key="n" :value="n">Semaine {{ n }}</option>
+      </select>
+    </div>
+    <div class="col-3 d-grid" @click="loadNextWeek">
+      <button class="btn btn-primary d-block">Semaine suivante</button>
+    </div>
+    <div class="col-3"></div>
 
-            <!-- En-tête avec les noms des groupes -->
-            <div class="row">
-              <div class="col-md-1 text-center font-weight-bold"></div>
-              <div
-                v-for="group in groups"
-                :key="group"
-                class="col-md-1 text-center font-weight-bold"
-              >
-                Groupe {{ String.fromCharCode(64 + group) }} <!-- Affiche A, B, C... -->
-              </div>
-            </div>
-
-            <!-- Boucle sur les 6 lignes pour le jour -->
-            <div v-for="(line, lineIndex) in day" :key="lineIndex" class="row">
-              <!-- Colonne distincte pour les heures de cours -->
-              <div class="col-md-1 border p-2 text-center">
-                {{ timeSlots[lineIndex] }}
-              </div>
-
-              <!-- Boucle sur les groupes (colonnes) -->
-              <div
-                v-for="group in groups"
-                :key="group"
-                class="col-md-1 border p-2"
-                :class="{ 'droppable': true, 'available-slot': isDragging && isSlotHighlighted(dayIndex, lineIndex) }"
-                @drop.prevent="onDrop(dayIndex, lineIndex, group)"
-                @dragover.prevent
-              >
-                <div v-if="grid[dayIndex][lineIndex][group]" class="course-cell">
-                  <span
-                    :style="{ backgroundColor: grid[dayIndex][lineIndex][group].color }"
-                    class="p-1 text-white"
-                  >
-                    {{ grid[dayIndex][lineIndex][group].label }}<br />
-                    <small>Prof : {{ grid[dayIndex][lineIndex][group].professor }}</small>
-                    <br />
-                    <small>Salle : {{ grid[dayIndex][lineIndex][group].assignedRoom }}</small>
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
+    <div class="col-12">
+      <div class="grid-container" v-for="day in days" :key="day.day">
+        <div class="grid-day">{{ day.day }} {{ day.dateFr }}</div>
+        <!-- Header Row: Semesters -->
+        <div class="grid-header grid-time">Heure</div>
+        <div
+          v-for="(groups, semestre) in groupData"
+          :key="semestre"
+          class="grid-header"
+          :style="{ gridColumn: `span ${groups.length}` }"
+        >
+          {{ semestre }}
         </div>
-      </div>
 
-      <!-- Colonne de droite avec la liste des cours -->
-      <div class="col-md-4">
-        <h5>Liste des Cours</h5>
-        <div class="list-group">
-          <div
-            v-for="course in availableCourses"
-            :key="course.id"
-            class="list-group-item"
-            draggable="true"
-            @dragstart="onDragStart(course)"
-            :style="{ backgroundColor: course.color, cursor: 'move' }"
-          >
-            {{ course.label }} (Groupe {{ String.fromCharCode(64 + course.group) }}) || {{ course.professor }}
+        <!-- Second Row: Group Headers -->
+        <div class="grid-time"></div>
+        <template v-for="(groups, semestre) in groupData" :key="'group-' + semestre">
+          <div v-for="groupNumber in groups" :key="semestre + groupNumber" class="grid-header">
+            {{ String.fromCharCode(64 + groupNumber) }}
           </div>
-        </div>
+        </template>
+
+        <!-- Time Slots and Group Cells -->
+        <template v-for="time in timeSlots" :key="time">
+          <div class="grid-time">{{ time }}</div>
+          <template v-for="(groups, semestre) in groupData" :key="'time-' + semestre">
+            <div
+              v-for="groupNumber in groups"
+              :key="time + semestre + groupNumber"
+              class="grid-cell"
+              :style="{
+                backgroundColor: placedCourses[`${day.day}_${time}_${semestre}_${groupNumber}`]
+                  ? placedCourses[`${day.day}_${time}_${semestre}_${groupNumber}`].color
+                  : ''
+              }"
+              @drop="onDrop($event, day.day, time, semestre, groupNumber)"
+              @mouseover="highlightSameCourses(day.day, time, semestre, groupNumber)"
+              @mouseout="clearSameCoursesHighlight(day.day, time, semestre, groupNumber)"
+              @dragover.prevent
+              :data-key="day.day + '_' + time + '_' + semestre + '_' + groupNumber"
+            >
+              <span v-if="placedCourses[`${day.day}_${time}_${semestre}_${groupNumber}`]">
+
+                <span v-html="displayCourse(placedCourses[`${day.day}_${time}_${semestre}_${groupNumber}`])"></span>
+                <button
+                  v-if="
+                    placedCourses[`${day.day}_${time}_${semestre}_${groupNumber}`].blocked === false
+                  "
+                  class="remove-btn"
+                  @click="
+                    removeCourse(
+                      day.day,
+                      time,
+                      semestre,
+                      groupNumber,
+                      placedCourses[`${day.day}_${time}_${semestre}_${groupNumber}`].groupCount
+                    )
+                  "
+                >
+                  x
+                </button>
+              </span>
+            </div>
+          </template>
+        </template>
       </div>
     </div>
   </div>
+    <!-- Sidebar Toggle Button -->
+    <nav class="sidebar-toggle" @click="toggleSidebar">
+      Cours
+      <span v-if="!isSidebarOpen">◀ ({{ filteredCourses.length }})</span>
+      <span v-else>▶</span>
+    </nav>
+
+    <!-- Collapsible Sidebar -->
+    <div :class="['sidebar', { 'sidebar-open': isSidebarOpen }]">
+      <div class="row">
+        <div class="col-6">
+          <select v-model="selectedSemester">
+            <option value="">Semestre</option>
+            <option value="s1">Semestre 1</option>
+            <option value="s3">Semestre 3</option>
+            <option value="s5">Semestre 5</option>
+          </select>
+        </div>
+        <div class="col-6">
+          <select v-model="selectedProfessor">
+            <option value="">Professeur</option>
+            <option :value="professor.initiales" v-for="professor in professorsStore.professors" :key="professor.initiales">{{ professor.initiales }}</option>
+          </select>
+        </div>
+        <div class="col-6">
+          <select v-model="selectedCourse">
+            <option value="">Cours</option>
+            <option :value="matiere.code" v-for="matiere in matieresStore.matieres" :key="matiere.code">{{ matiere.code }}</option>
+          </select>
+        </div>
+        <div class="col-6">
+          <select v-model="selectedGroup">
+            <option value="">Groupe</option>
+            <option value="1">Groupe 1 / S1</option>
+            <option value="2">Groupe 2 / S1</option>
+            <option value="3">Groupe 3 / S1</option>
+            <option value="4">Groupe 4 / S1</option>
+            <option value="5">Groupe 5 / S1</option>
+            <option value="6">Groupe 6 / S1</option>
+            <option value="7">Groupe 7 / S1</option>
+            <option value="8">Groupe 8 / S1</option>
+            <option value="9">Groupe 1 / S3</option>
+            <option value="10">Groupe 2 / S3</option>
+            <option value="11">Groupe 3 / S3</option>
+            <option value="12">Groupe 4 / S3</option>
+            <option value="13">Groupe 5 / S3</option>
+            <option value="14">Groupe 6 / S3</option>
+            <option value="15">Groupe 7 / S3</option>
+            <option value="16">Groupe 8 / S3</option>
+            <option value="17">Groupe 1 / S5</option>
+            <option value="18">Groupe 2 / S5</option>
+            <option value="19">Groupe 3 / S5</option>
+            <option value="20">Groupe 4 / S5</option>
+            <option value="21">Groupe 5 / S5</option>
+            <option value="22">Groupe 6 / S5</option>
+            <option value="23">Groupe 7 / S5</option>
+            <option value="24">Groupe 8 / S5</option>
+          </select>
+        </div>
+        <div class="col-6"></div>
+        <div class="col-6">
+          <button @click="resetFilters">Reset</button>
+        </div>
+      </div>
+      <div class="list-group grid-container-available">
+        <div
+          v-for="course in filteredCourses"
+          :key="course.id"
+          class="list-group-item grid-item-available"
+          :style="{ gridColumn: `span ${course.groupCount}`, backgroundColor: course.color, cursor: 'move' }"
+          draggable="true"
+          @dragstart="onDragStart($event, course)"
+        >
+          <span v-html="displayCourseListe(course)" class="course-available"></span>
+        </div>
+      </div>
+    </div>
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, computed } from 'vue'
 
-// Liste des groupes possibles
-//const groups = [1, 2, 3, 4, 5, 6]
-const groups = {
-  "s1": [1, 2, 3, 4, 5, 6, 7, 8],
-  "s3": [1, 2, 3, 4, 5, 6, 7, 8],
-  "s5": [1, 2, 3, 4, 5, 6, 7, 8],
-}
+const baseUrl = import.meta.env.VITE_BASE_URL
 
-const timeSlots = ["8h00", "9h30", "11h00", "14h00", "15h30", "17h00"];
-const availableSlots = ref([])
-const isDragging = ref(false)
-
-
-// Génération des créneaux avec groupes et professeurs
-const getCourseSlots = async () => {
-  return await fetch('/data/courses.json').then((res) => res.json())
-}
-const availableCourses = ref() // Cours disponibles pour le drag
-onMounted(async () => {
-  availableCourses.value = await getCourseSlots()
-  console.log(availableCourses.value)
+const groupData = ref({
+  s1: [1, 2, 3, 4, 5, 6, 7, 8],
+  s3: [1, 2, 3, 4, 5, 6, 7, 8],
+  s5: [1, 2, 3, 4, 5, 6, 7, 8]
 })
 
-// Grille 3 jours x 6 lignes par jour x 6 groupes
-const grid = ref(
-  Array.from({ length: 3 }, () =>
-    Array.from({ length: 6 }, () => groups.reduce((acc, group) => ({ ...acc, [group]: null }), {}))
-  )
-)
+const timeSlots = ref(['8h00', '9h30', '11h00', '12h30', '14h00', '15h30', '17h00'])
+const days = ref()
 
-const draggedCourse = ref(null)
+const selectedSemester = ref('')
+const selectedProfessor = ref('')
+const selectedCourse = ref('')
+const selectedGroup = ref('')
+const availableCourses = ref([])
+const restrictedSlots = ref([])
+const currentWeek = ref(1)
+const selectedHighlightType = ref('course') // 'course' or 'professor'
+import { useProfessorsStore } from '@/stores/professors'
+import { useMatieresStore } from '@/stores/matieres'
 
-// Méthode pour démarrer le drag d'un cours
-const onDragStart = (course) => {
-  isDragging.value = true;
-  highlightAvailableSlots(course);
-  draggedCourse.value = course // Stocke le cours en train d'être déplacé
-}
+const professorsStore = useProfessorsStore()
+const matieresStore = useMatieresStore()
 
-const  isSlotHighlighted = (dayIndex, slotIndex) => {
-  return availableSlots.value.some(
-    (slot) => slot.dayIndex === dayIndex && slot.slotIndex === slotIndex
-  );
-}
+onMounted(async () => {
+  try {
+    //charge le calendrier de la semaine
+    _getSemaines(currentWeek.value)
+    _getCours(currentWeek.value)
 
-// Méthode pour vérifier la disponibilité des professeurs sur le créneau
-const isProfessorAvailable = (professor, dayIndex, lineIndex) => {
-  for (let group of groups) {
-    const courseInCell = grid.value[dayIndex][lineIndex][group]
-    if (courseInCell && courseInCell.professor === professor) {
-      return false // Prof déjà assigné à un créneau sur cette ligne
-    }
+    await professorsStore.fetchProfessors()
+    await matieresStore.fetchMatieres()
+  } catch (error) {
+    console.error('Error loading JSON:', error)
   }
-  return true // Le professeur est disponible
+})
+
+const isSidebarOpen = ref(false)
+
+const toggleSidebar = () => {
+  isSidebarOpen.value = !isSidebarOpen.value
 }
+const placedCourses = ref({})
 
-const highlightAvailableSlots = (course) => {
-  // Logique pour trouver les créneaux disponibles pour le professeur du cours
-  availableSlots.value = []
-  grid.value.forEach((day, dayIndex) => {
-    day.forEach((slot, slotIndex) => {
-      console.log(slot)
-      if (isSlotAvailable(slot, course.professor)) {
-        availableSlots.value.push({ dayIndex, slotIndex });
-      }
-    });
-  });
-}
-
-const isSlotAvailable = (slot, professor) => {
-  for (let group of groups) {
-    if (slot[group] && slot[group].professor === professor) {
-      return false;
-    }
-  }
-  return true;
-}
-
-// Méthode pour déposer le cours dans la grille (jour, ligne, groupe)
-const onDrop = (dayIndex, lineIndex, group) => {
-  const courseGroup = draggedCourse.value?.group
-
-  // Vérifie si le cours appartient au bon groupe
-  if (courseGroup !== group) {
-    alert('Le cours ne peut être placé que dans la colonne de son groupe.')
-    return
-  }
-
-  // Vérifie si la case est libre
-  if (!grid.value[dayIndex][lineIndex][group]) {
-    // Choix d'un professeur disponible pour ce créneau
-    const availableProfessors = isProfessorAvailable(draggedCourse.value.professor, dayIndex, lineIndex)
-
-    if (availableProfessors === false) {
-      alert('Professeur déjà assigné sur cette ligne.')
-      return
-    }
-
-    // Placement du cours dans la grille
-    grid.value[dayIndex][lineIndex][group] = draggedCourse.value
-
-    // Supprime le créneau de la liste des cours disponibles
-    availableCourses.value = availableCourses.value.filter(
-      (course) => course.id !== draggedCourse.value.id
+const filteredCourses = computed(() => {
+  return availableCourses.value.filter((course) => {
+    return (
+      (selectedSemester.value === '' || course.group === selectedSemester.value) &&
+      (selectedProfessor.value === '' || course.professor === selectedProfessor.value) &&
+      (selectedCourse.value === '' || course.name === selectedCourse.value) &&
+      (selectedGroup.value === '' || course.groupIndex === parseInt(selectedGroup.value))
     )
+  })
+})
+
+const displayCourse = (course) => {
+  if (course.blocked === true) {
+    return course.name
+  }
+  return `${course.name} <br> ${course.professor} <br> ${course.room}`
+}
+
+const displayCourseListe = (course) => {
+  let groupe = ''
+  if (course.groupCount === 1) {
+    groupe = 'TP ' + String.fromCharCode(64 + course.groupIndex)
+  } else if (course.groupCount === 2) {
+    groupe = 'TD ' + String.fromCharCode(64 + course.groupIndex) + String.fromCharCode(65 + course.groupIndex)
   } else {
-    // Échange avec un cours déjà présent si nécessaire
-    const currentCourse = grid.value[dayIndex][lineIndex][group]
-
-    // Remettre le cours actuel dans la liste des cours disponibles
-    availableCourses.value.push(currentCourse)
-
-    // Remplacement par le nouveau cours
-    grid.value[dayIndex][lineIndex][group] = draggedCourse.value
-
-    // Supprimer le cours déplacé de la liste
-    availableCourses.value = availableCourses.value.filter(
-      (course) => course.id !== draggedCourse.value.id
-    )
+    groupe = 'CM'
   }
 
-  // Réinitialisation du cours déplacé
-  draggedCourse.value = null
-  isDragging.value = false;
-  availableSlots.value = [];
+  return `${course.name} <br> ${course.professor} <br> ${course.group} <br> ${groupe}`
 }
 
-const rooms = ["A1", "A2", "A3", "A4", "I1", "I2"]; // Salles disponibles
+const resetFilters = () => {
+  selectedSemester.value = ''
+  selectedProfessor.value = ''
+  selectedCourse.value = ''
+  selectedGroup.value = ''
+}
 
-const assignRooms = () => {
-  const roomAssignments = {};
+const _getSemaines = async(numSemaine) => {
+  const data = await fetch(baseUrl + '/get-semaine/' + numSemaine).then((res) => res.json())
+  restrictedSlots.value = data.restrictedSlots
+  days.value = data.days
+  placedCourses.value = {}
 
-  // Parcourir chaque jour
-  for (let dayIndex = 0; dayIndex < grid.value.length; dayIndex++) {
-    // Parcourir chaque ligne (heure) pour le jour
-    for (let lineIndex = 0; lineIndex < grid.value[dayIndex].length; lineIndex++) {
-      // Parcourir chaque groupe
-      for (let group = 1; group <= 6; group++) {
-        // Vérifier si le cours existe pour ce groupe
-        if (grid.value[dayIndex][lineIndex][group]) {
-          // Si la salle n'a pas encore été affectée pour cette heure, l'affecter
-          let assignedRoom = null;
+  applyRestrictions()
+}
 
-          for (const room of rooms) {
-            // Vérifie si la salle est déjà utilisée à cette heure
-            if (!roomAssignments[lineIndex] || !roomAssignments[lineIndex].includes(room)) {
-              assignedRoom = room;
-              break; // Salle disponible trouvée
-            }
-          }
+const _getCours = async(numSemaine) => {
+  availableCourses.value = await fetch(baseUrl + '/get-cours-semaine/' + numSemaine).then((res) => res.json())
+}
 
-          if (assignedRoom) {
-            // Affecte la salle au cours
-            grid.value[dayIndex][lineIndex][group].assignedRoom = assignedRoom;
+const loadWeek = async () => {
+  try {
+    verifyAndResetGrid() // on remet la grille en état
+    await _getSemaines(currentWeek.value)
+    await _getCours(currentWeek.value)
 
-            // Ajoute la salle à l'enregistrement pour éviter d'utiliser la même salle à la même heure
-            if (!roomAssignments[lineIndex]) {
-              roomAssignments[lineIndex] = [];
-            }
-            roomAssignments[lineIndex].push(assignedRoom);
+  } catch (error) {
+    console.error('Error loading JSON:', error)
+  }
+}
+
+const verifyAndResetGrid = () => {
+  // pour chaque cours placés on supprime pour remettre la grille en état avant le changement de semestre
+  Object.keys(placedCourses.value).forEach((key) => {
+    const course = placedCourses.value[key]
+    if (course.blocked === false) {
+      removeCourse(course.day, course.time, course.group, course.groupIndex, course.groupCount)
+    }
+  })
+}
+
+const loadPreviousWeek = () => {
+  if (currentWeek.value > 1) {
+    currentWeek.value -= 1
+    loadWeek()
+  }
+}
+
+const loadNextWeek = () => {
+  currentWeek.value += 1
+  loadWeek()
+}
+
+const onDragStart = (event, course) => {
+  event.dataTransfer.setData('courseId', course.id)
+  highlightValidCells(course)
+  event.target.addEventListener('dragend', clearHighlight, { once: true })
+}
+
+const onDrop = (event, day, time, semestre, groupNumber) => {
+  const courseId = event.dataTransfer.getData('courseId')
+  const courseIndex = availableCourses.value.findIndex((c) => c.id == courseId)
+  const course = availableCourses.value[courseIndex]
+
+  if (course && course.group === semestre && course.groupIndex === groupNumber) {
+    const groupSpan = course.groupCount
+
+    if (groupNumber <= groupData.value[semestre].length - groupSpan + 1) {
+      // Place the course in all necessary cells
+      const cellSelector = `[data-key="${day}_${time}_${semestre}_${groupNumber}"]`
+      const cell = document.querySelector(cellSelector)
+      if (cell) {
+        cell.style.gridColumn = `span ${groupSpan}`
+        cell.style.width = `${50 * groupSpan}px`
+        // Remove the extra cells that are merged
+        for (let i = 1; i < groupSpan; i++) {
+          const extraCellSelector = `[data-key="${day}_${time}_${semestre}_${groupNumber + i}"]`
+          const extraCell = document.querySelector(extraCellSelector)
+          if (extraCell) {
+            extraCell.remove()
           }
         }
       }
+      course.time = time
+      course.day = day
+      course.blocked = false
+      placedCourses.value[`${day}_${time}_${semestre}_${groupNumber}`] = course
+      availableCourses.value.splice(courseIndex, 1)
     }
   }
-};
+  // clearHighlight()
+}
+
+const removeCourse = (day, time, semestre, groupNumber, groupSpan) => {
+  const courseKey = `${day}_${time}_${semestre}_${groupNumber}`
+  const course = placedCourses.value[courseKey]
+  const currentCell = document.querySelector(`[data-key="${courseKey}"]`)
+
+  if (course) {
+    course.time = null
+    course.day = null
+    availableCourses.value.push(course)
+    currentCell.style = ''
+    currentCell.classList.remove('highlight-same-course')
+
+    // Remove the course from all associated cells and add empty cells back
+    for (let i = 0; i < groupSpan; i++) {
+      delete placedCourses.value[`${day}_${time}_${semestre}_${groupNumber + i}`]
+    }
+    // Recreate the missing cells
+    for (let i = 1; i < groupSpan; i++) {
+      const cellKey = `${day}_${time}_${semestre}_${groupNumber + i}`
+      const cell = currentCell.cloneNode(false)
+      cell.setAttribute('data-key', cellKey)
+      const parent = currentCell.parentNode
+      parent.insertBefore(cell, currentCell.nextSibling)
+    }
+  }
+}
+
+
+
+const applyRestrictions = () => {
+  // blcoage du créneau de 12h30, tous les jours, pour tous les groupes
+  days.value.forEach((day) => {
+    // blocage du créneau de 12h30
+    Object.keys(groupData.value).forEach((semester) => {
+      groupData.value[semester].forEach((groupNumber) => {
+        blockSlot(day.day, '12h30', semester, groupNumber, 'Pause')
+      })
+    })
+  })
+
+
+  restrictedSlots.value.forEach((slot) => {
+    const { type, slot: timeSlot, semester, days, groups, period, motif } = slot
+
+    days.forEach((day) => {
+      if (type === 'generic') {
+        // dans ce cas tous les semestres, tous les groupes
+        Object.keys(groupData.value).forEach((semester) => {
+          groupData.value[semester].forEach((groupNumber) => {
+            blockSlot(day, timeSlot, semester, groupNumber, motif)
+          })
+        })
+      } else if (type === 'semester') {
+        // dans ce cas tous les groupes d'un semestre
+        groupData.value[semester].forEach((groupNumber) => {
+          blockSlot(day, timeSlot, semester, groupNumber, motif)
+        })
+      } else if (type === 'group') {
+        groups.forEach((groupNumber) => {
+          blockSlot(day, timeSlot, semester, groupNumber, motif)
+        })
+      } else if (type === 'half-day' || type === 'full-day') {
+        const times =
+          type === 'half-day'
+            ? period === 'morning'
+              ? ['8h00', '9h30', '11h00']
+              : ['14h00', '15h30', '17h00']
+            : ['8h00', '9h30', '11h00', '14h00', '15h30', '17h00']
+        times.forEach((time) => {
+          groupData.value[semester].forEach((groupNumber) => {
+            blockSlot(day, time, semester, groupNumber, motif)
+          })
+        })
+      }
+    })
+  })
+}
+
+const blockSlot = (day, time, semester, groupNumber, motif = null) => {
+  const cellKey = `${day}_${time}_${semester}_${groupNumber}`
+  console.log(motif, cellKey)
+  placedCourses.value[cellKey] = { name: motif ?? 'blocked', color: '#ffcccc', blocked: true }
+}
+
+const isProfessorAvailable = (professor, day, time) => {
+  return !Object.values(placedCourses.value).some(
+    (course) => course.professor === professor && course.time === time && course.day === day
+  )
+}
+const highlightValidCells = (course) => {
+  const { group, groupIndex, groupCount, professor } = course
+  days.value.forEach((day) => {
+    timeSlots.value.forEach((time) => {
+      if (isProfessorAvailable(professor, day.day, time)) {
+        for (let i = 0; i < groupCount; i++) {
+          const cellKey = `${day.day}_${time}_${group}_${groupIndex + i}`
+          const cell = document.querySelector(`[data-key="${cellKey}"]`)
+          if (cell && !placedCourses.value[cellKey]) {
+            cell.classList.add('highlight')
+          }
+        }
+      }
+    })
+  })
+}
+
+const clearHighlight = () => {
+  const highlightedCells = document.querySelectorAll('.highlight')
+  highlightedCells.forEach((cell) => {
+    cell.classList.remove('highlight')
+  })
+}
+
+const assignRoomsAutomatically = () => {
+  const rooms = ['Room A', 'Room B', 'Room C', 'Room D'] // Example room list
+  const assignedRooms = {} // Map to track assigned rooms for each time slot
+
+  Object.keys(placedCourses.value).forEach((key) => {
+    const course = placedCourses.value[key]
+    if (course && !course.room) {
+      const timeSlot = `${course.day}_${course.time}`
+      if (!assignedRooms[timeSlot]) {
+        assignedRooms[timeSlot] = new Set()
+      }
+
+      // Find an available room
+      let roomAssigned = false
+      for (let room of rooms) {
+        if (!assignedRooms[timeSlot].has(room)) {
+          course.room = room
+          assignedRooms[timeSlot].add(room)
+          roomAssigned = true
+          break
+        }
+      }
+
+      // If no room is available, you can handle it as needed (e.g., log an error)
+      if (!roomAssigned) {
+        console.error(`No available room for course ${course.name} at ${timeSlot}`)
+      }
+    }
+  })
+}
+
+const highlightSameCourses = (day, time, semestre, groupNumber) => {
+  const courseKey = `${day}_${time}_${semestre}_${groupNumber}`
+  const course = placedCourses.value[courseKey]
+
+  if (course) {
+    const highlightValue = selectedHighlightType.value === 'course' ? course.name : course.professor
+    Object.keys(placedCourses.value).forEach((key) => {
+      if (
+        (selectedHighlightType.value === 'course' && placedCourses.value[key].name === highlightValue) ||
+        (selectedHighlightType.value === 'professor' && placedCourses.value[key].professor === highlightValue)
+      ) {
+        const cell = document.querySelector(`[data-key="${key}"]`)
+        if (cell) {
+          cell.classList.add('highlight-same-course')
+        }
+      }
+    })
+  }
+}
+
+const clearSameCoursesHighlight = (day, time, semestre, groupNumber) => {
+  const courseKey = `${day}_${time}_${semestre}_${groupNumber}`
+  const course = placedCourses.value[courseKey]
+
+  if (course) {
+    const highlightValue = selectedHighlightType.value === 'course' ? course.name : course.professor
+    Object.keys(placedCourses.value).forEach((key) => {
+      if (
+        (selectedHighlightType.value === 'course' && placedCourses.value[key].name === highlightValue) ||
+        (selectedHighlightType.value === 'professor' && placedCourses.value[key].professor === highlightValue)
+      ) {
+        const cell = document.querySelector(`[data-key="${key}"]`)
+        if (cell) {
+          cell.classList.remove('highlight-same-course')
+        }
+      }
+    })
+  }
+}
 </script>
+
+<style scoped>
+.grid-container {
+  display: grid;
+  grid-template-columns: 100px repeat(24, 1fr);
+  gap: 0;
+  width: 100%;
+  border: 1px solid #000;
+}
+
+.grid-day {
+  grid-column: span 25;
+  background-color: #e19797;
+  text-align: center;
+  font-weight: bold;
+}
+
+.grid-header {
+  background-color: #f2f2f2;
+  text-align: center;
+  padding: 8px;
+  font-weight: bold;
+  border: 1px solid #000;
+  grid-column: span 1;
+}
+
+.grid-time {
+  text-align: center;
+  padding: 8px;
+  background-color: #f9f9f9;
+  border: 1px solid #000;
+  grid-column: span 1;
+}
+
+.grid-cell {
+  text-align: center;
+  font-size: 9px;
+  width: 50px;
+  padding: 2px;
+  border: 1px solid #000;
+  background-color: #fff;
+  grid-column: span 1;
+}
+
+.grid-cell.highlight {
+  background-color: #d1e7dd;
+}
+
+.grid-cell.highlight-same-course {
+  background-color: #ffeb3b !important; /* Highlight color */
+}
+
+.course-available {
+  display: block;
+  padding: 8px;
+}
+
+.grid-container-available {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr); /* Ajustez le nombre de colonnes selon vos besoins */
+  gap: 3px;
+}
+
+.grid-item-available {
+  padding: 2px;
+  font-size: 9px;
+  border: 1px solid #000;
+  background-color: #fff;
+  text-align: center;
+}
+
+.remove-btn {
+  background: none;
+  border: none;
+  color: red;
+  cursor: pointer;
+  font-size: 16px;
+  margin-left: 8px;
+}
+
+.row {
+  position: relative;
+}
+
+.sidebar-toggle {
+  position: fixed;
+  top: 50%;
+  width:80px;
+  right: 0;
+  transform: translateY(-50%);
+  background-color: #007bff;
+  color: white;
+  padding: 10px;
+  cursor: pointer;
+  z-index: 1000;
+}
+
+.sidebar {
+  position: fixed;
+  top: 0;
+  right: -300px;
+  width: 300px;
+  height: 100%;
+  background-color: #f8f9fa;
+  box-shadow: -2px 0 5px rgba(0, 0, 0, 0.5);
+  transition: right 0.3s ease;
+  z-index: 999;
+}
+
+.sidebar-open {
+  right: 0;
+}
+
+.list-group-item {
+  padding: 10px;
+  border-bottom: 1px solid #ddd;
+}
+</style>
