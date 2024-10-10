@@ -71,12 +71,8 @@
               :data-key="day.day + '_' + time + '_' + semestre + '_' + groupNumber"
             >
               <span v-if="placedCourses[`${day.day}_${time}_${semestre}_${groupNumber}`]">
-<!--                {{ placedCourses[`${day.day}_${time}_${semestre}_${groupNumber}`].name }} ||-->
-<!--                {{ placedCourses[`${day.day}_${time}_${semestre}_${groupNumber}`].professor }} ||-->
-<!--                {{ placedCourses[`${day.day}_${time}_${semestre}_${groupNumber}`].room }}-->
 
-                {{ displayCourse(placedCourses[`${day.day}_${time}_${semestre}_${groupNumber}`]) }}
-
+                <span v-html="displayCourse(placedCourses[`${day.day}_${time}_${semestre}_${groupNumber}`])"></span>
                 <button
                   v-if="
                     placedCourses[`${day.day}_${time}_${semestre}_${groupNumber}`].blocked === false
@@ -113,21 +109,13 @@
         <div class="col-6">
           <select v-model="selectedProfessor">
             <option value="">Professeur</option>
-            <option value="M. Dupont">M. Dupont</option>
-            <option value="Mme Durand">Mme Durand</option>
-            <option value="M. Smith">M. Smith</option>
-            <option value="Mme Leroy">Mme Leroy</option>
-            <option value="M. Rousseau">M. Rousseau</option>
+            <option :value="professor.initiales" v-for="professor in professorsStore.professors" :key="professor.initiales">{{ professor.initiales }}</option>
           </select>
         </div>
         <div class="col-6">
           <select v-model="selectedCourse">
             <option value="">Cours</option>
-            <option value="Mathématiques">Mathématiques</option>
-            <option value="Histoire">Histoire</option>
-            <option value="Anglais">Anglais</option>
-            <option value="Sciences">Sciences</option>
-            <option value="Philosophie">Philosophie</option>
+            <option :value="matiere.code" v-for="matiere in matieresStore.matieres" :key="matiere.code">{{ matiere.code }}</option>
           </select>
         </div>
         <div class="col-6">
@@ -215,6 +203,11 @@ const availableCourses = ref([])
 const restrictedSlots = ref([])
 const currentWeek = ref(1)
 const selectedHighlightType = ref('course') // 'course' or 'professor'
+import { useProfessorsStore } from '@/stores/professors'
+import { useMatieresStore } from '@/stores/matieres'
+
+const professorsStore = useProfessorsStore()
+const matieresStore = useMatieresStore()
 
 onMounted(async () => {
   try {
@@ -223,6 +216,9 @@ onMounted(async () => {
 
     //charge les cours disponibles
     availableCourses.value = await fetch('/data/courses.json').then((res) => res.json())
+
+    professorsStore.fetchProfessors()
+    matieresStore.fetchMatieres()
   } catch (error) {
     console.error('Error loading JSON:', error)
   }
@@ -245,7 +241,7 @@ const displayCourse = (course) => {
   if (course.blocked === true) {
     return course.name
   }
-  return `${course.name} || ${course.professor} || ${course.room}`
+  return `${course.name} <br> ${course.professor} <br> ${course.room}`
 }
 
 const displayCourseListe = (course) => {
@@ -316,6 +312,7 @@ const onDrop = (event, day, time, semestre, groupNumber) => {
       const cell = document.querySelector(cellSelector)
       if (cell) {
         cell.style.gridColumn = `span ${groupSpan}`
+        cell.style.width = `${50 * groupSpan}px`
         // Remove the extra cells that are merged
         for (let i = 1; i < groupSpan; i++) {
           const extraCellSelector = `[data-key="${day}_${time}_${semestre}_${groupNumber + i}"]`
@@ -541,7 +538,10 @@ const clearSameCoursesHighlight = (day, time, semestre, groupNumber) => {
 }
 
 .grid-cell {
-  padding: 8px;
+  text-align: center;
+  font-size: 9px;
+  width: 50px;
+  padding: 2px;
   border: 1px solid #000;
   background-color: #fff;
   grid-column: span 1;
@@ -563,11 +563,12 @@ const clearSameCoursesHighlight = (day, time, semestre, groupNumber) => {
 .grid-container-available {
   display: grid;
   grid-template-columns: repeat(8, 1fr); /* Ajustez le nombre de colonnes selon vos besoins */
-  gap: 10px;
+  gap: 3px;
 }
 
 .grid-item-available {
-  padding: 8px;
+  padding: 2px;
+  font-size: 9px;
   border: 1px solid #000;
   background-color: #fff;
   text-align: center;
