@@ -1,6 +1,11 @@
 import './assets/main.css'
+import 'primeicons/primeicons.css'
+
 import "bootstrap/dist/css/bootstrap.min.css"
 import "bootstrap"
+
+import PrimeVue from 'primevue/config';
+import Lara from '@primevue/themes/lara';
 
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
@@ -12,5 +17,13 @@ const app = createApp(App)
 
 app.use(createPinia())
 app.use(router)
+app.use(PrimeVue, {
+  theme: {
+    preset: Lara,
+    options: {
+      darkModeSelector: false || 'none',
+    }
+  }
+});
 
 app.mount('#app')

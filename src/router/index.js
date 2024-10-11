@@ -3,6 +3,8 @@ import HomeView from '../views/HomeView.vue'
 import EdtView from '@/views/EdtView.vue'
 import ProgressionView from '@/views/ProgressionView.vue'
 import GenereView from '@/views/GenereView.vue'
+import ProfesseursView from '@/views/ProfesseursView.vue'
+import MatieresView from '@/views/MatieresView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -16,6 +18,16 @@ const router = createRouter({
       path: '/progression',
       name: 'progression',
       component: ProgressionView
+    },
+    {
+      path: '/gestion/professeurs',
+      name: 'professeurs',
+      component: ProfesseursView
+    },
+    {
+      path: '/gestion/matieres',
+      name: 'matieres',
+      component: MatieresView
     },
     {
       path: '/edt',

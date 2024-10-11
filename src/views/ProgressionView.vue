@@ -16,16 +16,11 @@
     <div class="grid-header">
       <div>Matière</div>
       <div>Professeur</div>
-      <div>CM</div>
-      <div>CM</div>
-      <div>CM</div>
-      <div>TD</div>
-      <div>TD</div>
-      <div>TD</div>
-      <div>TP</div>
-      <div>TP</div>
-      <div>TP</div>
-      <div>Total Heures</div>
+      <div>nb CM</div>
+      <div>nb TD</div>
+      <div>gr TD</div>
+      <div>nb TP</div>
+      <div>gr TP</div>
       <div>Etat</div>
       <div v-for="week in 5" :key="week">Semaine {{ week }}</div>
     </div>
@@ -34,16 +29,11 @@
     <div class="grid-filters">
       <input type="text" placeholder="Filtrer matière" />
       <input type="text" placeholder="Filtrer professeur" />
-      <input type="number" placeholder="Filtrer CM" />
-      <input type="number" placeholder="Filtrer CM" />
-      <input type="number" placeholder="Filtrer CM" />
-      <input type="number" placeholder="Filtrer TD" />
-      <input type="number" placeholder="Filtrer TD" />
-      <input type="number" placeholder="Filtrer TD" />
-      <input type="number" placeholder="Filtrer TP" />
-      <input type="number" placeholder="Filtrer TP" />
-      <input type="number" placeholder="Filtrer TP" />
-      <input type="number" placeholder="Filtrer total heures" />
+      <input type="number" placeholder="Nb CM" />
+      <input type="number" placeholder="Nb TD" />
+      <input type="number" placeholder="Gr. TD" />
+      <input type="number" placeholder="Nb TP" />
+      <input type="number" placeholder="Gr. TP" />
       <input type="number" placeholder="etat" />
       <div v-for="week in 5" :key="week">
         <input type="text" placeholder="Filtrer semaine" />
@@ -64,17 +54,16 @@
           {{ professor.initiales }}
         </option>
       </select>
-      <input type="number" v-model="row.cmHours" />
-      <input type="number" v-model="row.cmHours" />
-      <input type="number" v-model="row.cmHours" />
-      <input type="number" v-model="row.tdHours" />
-      <input type="number" v-model="row.tdHours" />
-      <input type="number" v-model="row.tdHours" />
-      <input type="number" v-model="row.tpHours" />
-      <input type="number" v-model="row.tpHours" />
-      <input type="number" v-model="row.tpHours" />
-      <div>{{ row.totalHours }}</div>
-      <div>OK</div>
+      <input type="number" v-model="row.cmNb" />
+      <input type="number" v-model="row.tdNb" />
+      <input type="text" v-model="row.tdGroups" />
+      <input type="number" v-model="row.tpNb" />
+      <input type="text" v-model="row.tpGroups" />
+      <div>
+        <span v-if="isOkRow(row)" class="badge bg-success">OK</span>
+        <span v-else class="badge bg-danger">KO</span>
+
+      </div>
       <div v-for="week in 5" :key="week">
         <input type="text" v-model="row.weekSessions[week]" />
       </div>
@@ -83,17 +72,12 @@
     <!-- Footer Row with Sums -->
     <div class="grid-footer">
       <div>Total</div>
-      <div></div>
       <div>{{ sumColumn('cm') }}</div>
-      <div></div>
       <div></div>
       <div>{{ sumColumn('td') }}</div>
       <div></div>
-      <div></div>
       <div>{{ sumColumn('tp') }}</div>
       <div></div>
-      <div></div>
-      <div>{{ sumColumn('total') }}</div>
       <div>etat</div>
       <div v-for="week in 5" :key="week"></div>
     </div>
@@ -118,12 +102,27 @@ onMounted(async () => {
   }
 })
 
+const isOkRow = (row) => {
+  // vérifier si sur les semaines, il y a l'ensemble des séances de CM, TD et TP de planifiées
+
+  // calcul du nombre de sessions de chaque type
+  const cmSessions = row.weekSessions.filter(session => session.includes('CM')).length
+  const tdSessions = row.weekSessions.filter(session => session.includes('TD')).length
+  const tpSessions = row.weekSessions.filter(session => session.includes('TP')).length
+
+  // vérification
+  return cmSessions == row.cmNb && tdSessions == row.tdNb && tpSessions == row.tpNb
+}
+
 const rows = ref(Array.from({ length: 5 }, () => ({
   selectedSubject: '',
   selectedProfessor: '',
-  cmHours: 0,
-  tdHours: 0,
-  tpHours: 0,
+  cmNb: 0,
+  cmGroups: 'all',
+  tdNb: 0,
+  tdGroups: 'AB,CD,EF,GH',
+  tpNb: 0,
+  tpGroups: 'A,B,C,D,E,F,G,H',
   weekSessions: Array(5).fill(''),
   get totalHours() {
     return this.cmHours + this.tdHours + this.tpHours
@@ -131,15 +130,15 @@ const rows = ref(Array.from({ length: 5 }, () => ({
 })))
 
 const sumColumn = (type) => {
-  return rows.value.reduce((sum, row) => sum + row[`${type}Hours`], 0)
+  return rows.value.reduce((sum, row) => sum + row[`${type}Hours`] * row[`${type}Nb`], 0)
 }
 </script>
 
 <style scoped>
 .grid-container {
   display: grid;
-  grid-template-columns: repeat(13, 1fr) repeat(5, 1fr);
-  gap: 10px;
+  grid-template-columns: repeat(8, 1fr) repeat(5, 1fr);
+  gap: 0;
 }
 
 .grid-header, .grid-filters, .grid-row, .grid-footer {
@@ -148,7 +147,7 @@ const sumColumn = (type) => {
 
 .grid-header > div, .grid-filters > div, .grid-row > div, .grid-footer > div {
   border: 1px solid #ccc;
-  padding: 8px;
+  padding: 1px;
   text-align: center;
 }
 </style>
