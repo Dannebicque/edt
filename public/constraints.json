@@ -1,0 +1,20 @@
+{
+  "JLE": {
+    "mandatory": [
+      { "day": "Lundi", "time": "8h00" },
+      { "day": "Mercredi", "time": "14h00" }
+    ],
+    "optional": [
+      { "day": "Mardi", "time": "17h00" },
+      { "day": "Vendredi", "time": "11h00" }
+    ]
+  },
+  "FME": {
+    "mandatory": [
+      { "day": "Mardi", "time": "9h30" }
+    ],
+    "optional": [
+      { "day": "Jeudi", "time": "15h30" }
+    ]
+  }
+}

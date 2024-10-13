@@ -174,6 +174,24 @@
         </div>
       </div>
     </div>
+
+  <div class="col-12">
+    <h2>Cours à replacer ({{coursesToReplace.length}})</h2>
+    <div class="list-group grid-container-replace"
+         @dragover.prevent
+         @drop="onDropToReplace"
+    >
+      <div
+        v-for="course in coursesToReplace"
+        :key="course.id"
+        class="list-group-item grid-item-replace"
+        :style="{ backgroundColor: course.color }"
+      >
+        <span v-html="displayCourseListe(course)" class="course-replace"></span>
+        <span>Semaine d'origine: {{ course.originalWeek }}</span>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
@@ -203,6 +221,9 @@ import { useMatieresStore } from '@/stores/matieres'
 
 const professorsStore = useProfessorsStore()
 const matieresStore = useMatieresStore()
+const coursesToReplace = ref([])
+const constraints = ref({})
+
 
 onMounted(async () => {
   try {
@@ -212,6 +233,10 @@ onMounted(async () => {
 
     await professorsStore.fetchProfessors()
     await matieresStore.fetchMatieres()
+    const response = await fetch('/constraints.json')
+    constraints.value = await response.json()
+    console.log(constraints.value)
+
   } catch (error) {
     console.error('Error loading JSON:', error)
   }
@@ -348,6 +373,18 @@ const onDrop = (event, day, time, semestre, groupNumber) => {
   // clearHighlight()
 }
 
+const onDropToReplace = (event) => {
+  const courseId = event.dataTransfer.getData('courseId')
+  const courseIndex = availableCourses.value.findIndex((c) => c.id == courseId)
+  const course = availableCourses.value[courseIndex]
+
+  if (course) {
+    course.originalWeek = currentWeek.value
+    coursesToReplace.value.push(course)
+    availableCourses.value.splice(courseIndex, 1)
+  }
+}
+
 const removeCourse = (day, time, semestre, groupNumber, groupSpan) => {
   const courseKey = `${day}_${time}_${semestre}_${groupNumber}`
   const course = placedCourses.value[courseKey]
@@ -437,15 +474,31 @@ const isProfessorAvailable = (professor, day, time) => {
     (course) => course.professor === professor && course.time === time && course.day === day
   )
 }
+
 const highlightValidCells = (course) => {
   const { group, groupIndex, groupCount, professor } = course
+  const professorConstraints = constraints.value[professor] || { mandatory: [], optional: [] }
+
   days.value.forEach((day) => {
     timeSlots.value.forEach((time) => {
-      if (isProfessorAvailable(professor, day.day, time)) {
-        for (let i = 0; i < groupCount; i++) {
-          const cellKey = `${day.day}_${time}_${group}_${groupIndex + i}`
-          const cell = document.querySelector(`[data-key="${cellKey}"]`)
-          if (cell && !placedCourses.value[cellKey]) {
+      const isMandatory = professorConstraints.mandatory.some(
+        (constraint) => constraint.day === day.day && constraint.time === time
+      )
+      const isOptional = professorConstraints.optional.some(
+        (constraint) => constraint.day === day.day && constraint.time === time
+      )
+      const isAvailable = isProfessorAvailable(professor, day.day, time)
+
+      for (let i = 0; i < groupCount; i++) {
+        const cellKey = `${day.day}_${time}_${group}_${groupIndex + i}`
+        const cell = document.querySelector(`[data-key="${cellKey}"]`)
+
+        if (cell && !placedCourses.value[cellKey]) {
+          if (isMandatory) {
+            cell.classList.add('highlight-mandatory')
+          } else if (isOptional) {
+            cell.classList.add('highlight-optional')
+          } else if (isAvailable) {
             cell.classList.add('highlight')
           }
         }
@@ -454,10 +507,40 @@ const highlightValidCells = (course) => {
   })
 }
 
+
+
+// const highlightValidCells = (course) => {
+//   const { group, groupIndex, groupCount, professor } = course
+//   days.value.forEach((day) => {
+//     timeSlots.value.forEach((time) => {
+//       if (isProfessorAvailable(professor, day.day, time)) {
+//         for (let i = 0; i < groupCount; i++) {
+//           const cellKey = `${day.day}_${time}_${group}_${groupIndex + i}`
+//           const cell = document.querySelector(`[data-key="${cellKey}"]`)
+//           if (cell && !placedCourses.value[cellKey]) {
+//             cell.classList.add('highlight')
+//           }
+//         }
+//       }
+//     })
+//   })
+// }
+
 const clearHighlight = () => {
   const highlightedCells = document.querySelectorAll('.highlight')
   highlightedCells.forEach((cell) => {
     cell.classList.remove('highlight')
+  })
+
+  const highlightedMandatoryCells = document.querySelectorAll('.highlight-mandatory')
+  highlightedMandatoryCells.forEach((cell) => {
+    cell.classList.remove('highlight-mandatory')
+
+  })
+
+  const highlightedOptionalCells = document.querySelectorAll('.highlight-optional')
+  highlightedOptionalCells.forEach((cell) => {
+    cell.classList.remove('highlight-optional')
   })
 }
 
@@ -648,5 +731,33 @@ const clearSameCoursesHighlight = (day, time, semestre, groupNumber) => {
 .list-group-item {
   padding: 10px;
   border-bottom: 1px solid #ddd;
+}
+
+.grid-container-replace {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr); /* Adjust the number of columns as needed */
+  gap: 3px;
+  min-height: 50px;
+}
+
+.grid-item-replace {
+  padding: 2px;
+  font-size: 9px;
+  border: 1px solid #000;
+  background-color: #fff;
+  text-align: center;
+}
+
+.course-replace {
+  display: block;
+  padding: 8px;
+}
+
+.grid-cell.highlight-mandatory {
+  background-color: #ffcccc; /* Rouge pour les contraintes obligatoires */
+}
+
+.grid-cell.highlight-optional {
+  background-color: #ffffcc; /* Jaune pour les contraintes facultatives */
 }
 </style>
