@@ -22,7 +22,11 @@ const items = ref([
     icon: 'pi pi-fw pi-history',
     route: '/progression'
   },
-
+  {
+    label: 'Contraintes',
+    icon: 'pi pi-fw pi-history',
+    route: '/contraintes'
+  },
   {
     label: 'Gestion',
     icon: 'pi pi-palette',
