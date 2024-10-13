@@ -289,9 +289,18 @@ const resetFilters = () => {
 
 const _getSemaines = async(numSemaine) => {
   const data = await fetch(baseUrl + '/get-semaine/' + numSemaine).then((res) => res.json())
+
   restrictedSlots.value = data.restrictedSlots
   days.value = data.days
-  placedCourses.value = {}
+
+  placedCourses.value = await fetch(baseUrl + '/get-placed-courses/' + numSemaine).then((res) => res.json())
+
+  Object.keys(placedCourses.value).forEach(async (key) => {
+    const course = await placedCourses.value[key]
+    if (course.blocked === false) {
+      mergeCells(course.day, course.time, course.group, course.groupIndex, course.groupCount)
+    }
+  })
 
   applyRestrictions()
 }
@@ -349,28 +358,33 @@ const onDrop = (event, day, time, semestre, groupNumber) => {
 
     if (groupNumber <= groupData.value[semestre].length - groupSpan + 1) {
       // Place the course in all necessary cells
-      const cellSelector = `[data-key="${day}_${time}_${semestre}_${groupNumber}"]`
-      const cell = document.querySelector(cellSelector)
-      if (cell) {
-        cell.style.gridColumn = `span ${groupSpan}`
-        cell.style.width = `${50 * groupSpan}px`
-        // Remove the extra cells that are merged
-        for (let i = 1; i < groupSpan; i++) {
-          const extraCellSelector = `[data-key="${day}_${time}_${semestre}_${groupNumber + i}"]`
-          const extraCell = document.querySelector(extraCellSelector)
-          if (extraCell) {
-            extraCell.remove()
-          }
-        }
-      }
+      mergeCells(day, time, semestre, groupNumber, groupSpan)
       course.time = time
       course.day = day
       course.blocked = false
       placedCourses.value[`${day}_${time}_${semestre}_${groupNumber}`] = course
+      console.log(placedCourses.value)
       availableCourses.value.splice(courseIndex, 1)
     }
   }
   // clearHighlight()
+}
+
+const mergeCells = (day, time, semestre, groupNumber, groupSpan) => {
+  const cellSelector = `[data-key="${day}_${time}_${semestre}_${groupNumber}"]`
+  const cell = document.querySelector(cellSelector)
+  if (cell) {
+    cell.style.gridColumn = `span ${groupSpan}`
+    cell.style.width = `${50 * groupSpan}px`
+    // Remove the extra cells that are merged
+    for (let i = 1; i < groupSpan; i++) {
+      const extraCellSelector = `[data-key="${day}_${time}_${semestre}_${groupNumber + i}"]`
+      const extraCell = document.querySelector(extraCellSelector)
+      if (extraCell) {
+        extraCell.remove()
+      }
+    }
+  }
 }
 
 const onDropToReplace = (event) => {
@@ -465,7 +479,6 @@ const applyRestrictions = () => {
 
 const blockSlot = (day, time, semester, groupNumber, motif = null) => {
   const cellKey = `${day}_${time}_${semester}_${groupNumber}`
-  console.log(motif, cellKey)
   placedCourses.value[cellKey] = { name: motif ?? 'blocked', color: '#ffcccc', blocked: true }
 }
 
