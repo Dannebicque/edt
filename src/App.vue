@@ -73,7 +73,7 @@ const items = ref([
       </div>
     </template>
   </Menubar>
-  <main>
+  <main class="container-fluid">
   <RouterView />
   </main>
 </template>

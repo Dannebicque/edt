@@ -71,8 +71,16 @@
               :data-key="day.day + '_' + time + '_' + semestre + '_' + groupNumber"
             >
               <span v-if="placedCourses[`${day.day}_${time}_${semestre}_${groupNumber}`]">
-
-                <span v-html="displayCourse(placedCourses[`${day.day}_${time}_${semestre}_${groupNumber}`])"></span>
+                <span
+                  v-html="
+                    displayCourse(placedCourses[`${day.day}_${time}_${semestre}_${groupNumber}`])
+                  "
+                ></span>
+                <span
+                  @click="openModal(placedCourses[`${day.day}_${time}_${semestre}_${groupNumber}`])"
+                >
+                  -{{ placedCourses[`${day.day}_${time}_${semestre}_${groupNumber}`].room }}-
+                </span>
                 <button
                   v-if="
                     placedCourses[`${day.day}_${time}_${semestre}_${groupNumber}`].blocked === false
@@ -97,90 +105,103 @@
       </div>
     </div>
   </div>
-    <!-- Sidebar Toggle Button -->
-    <nav class="sidebar-toggle" @click="toggleSidebar">
-      Cours
-      <span v-if="!isSidebarOpen">◀ ({{ filteredCourses.length }})</span>
-      <span v-else>▶</span>
-    </nav>
+  <!-- Sidebar Toggle Button -->
+  <nav class="sidebar-toggle" @click="toggleSidebar">
+    Cours
+    <span v-if="!isSidebarOpen">◀ ({{ filteredCourses.length }})</span>
+    <span v-else>▶</span>
+  </nav>
 
-    <!-- Collapsible Sidebar -->
-    <div :class="['sidebar', { 'sidebar-open': isSidebarOpen }]">
-      <div class="row">
-        <div class="col-6">
-          <select v-model="selectedSemester">
-            <option value="">Semestre</option>
-            <option value="s1">Semestre 1</option>
-            <option value="s3">Semestre 3</option>
-            <option value="s5">Semestre 5</option>
-          </select>
-        </div>
-        <div class="col-6">
-          <select v-model="selectedProfessor">
-            <option value="">Professeur</option>
-            <option :value="professor.initiales" v-for="professor in professorsStore.professors" :key="professor.initiales">{{ professor.initiales }}</option>
-          </select>
-        </div>
-        <div class="col-6">
-          <select v-model="selectedCourse">
-            <option value="">Cours</option>
-            <option :value="matiere.code" v-for="matiere in matieresStore.matieres" :key="matiere.code">{{ matiere.code }}</option>
-          </select>
-        </div>
-        <div class="col-6">
-          <select v-model="selectedGroup">
-            <option value="">Groupe</option>
-            <option value="1">Groupe 1 / S1</option>
-            <option value="2">Groupe 2 / S1</option>
-            <option value="3">Groupe 3 / S1</option>
-            <option value="4">Groupe 4 / S1</option>
-            <option value="5">Groupe 5 / S1</option>
-            <option value="6">Groupe 6 / S1</option>
-            <option value="7">Groupe 7 / S1</option>
-            <option value="8">Groupe 8 / S1</option>
-            <option value="9">Groupe 1 / S3</option>
-            <option value="10">Groupe 2 / S3</option>
-            <option value="11">Groupe 3 / S3</option>
-            <option value="12">Groupe 4 / S3</option>
-            <option value="13">Groupe 5 / S3</option>
-            <option value="14">Groupe 6 / S3</option>
-            <option value="15">Groupe 7 / S3</option>
-            <option value="16">Groupe 8 / S3</option>
-            <option value="17">Groupe 1 / S5</option>
-            <option value="18">Groupe 2 / S5</option>
-            <option value="19">Groupe 3 / S5</option>
-            <option value="20">Groupe 4 / S5</option>
-            <option value="21">Groupe 5 / S5</option>
-            <option value="22">Groupe 6 / S5</option>
-            <option value="23">Groupe 7 / S5</option>
-            <option value="24">Groupe 8 / S5</option>
-          </select>
-        </div>
-        <div class="col-6"></div>
-        <div class="col-6">
-          <button @click="resetFilters">Reset</button>
-        </div>
+  <!-- Collapsible Sidebar -->
+  <div :class="['sidebar', { 'sidebar-open': isSidebarOpen }]">
+    <div class="row">
+      <div class="col-6">
+        <select v-model="selectedSemester">
+          <option value="">Semestre</option>
+          <option value="s1">Semestre 1</option>
+          <option value="s3">Semestre 3</option>
+          <option value="s5">Semestre 5</option>
+        </select>
       </div>
-      <div class="list-group grid-container-available">
-        <div
-          v-for="course in filteredCourses"
-          :key="course.id"
-          class="list-group-item grid-item-available"
-          :style="{ gridColumn: `span ${course.groupCount}`, backgroundColor: course.color, cursor: 'move' }"
-          draggable="true"
-          @dragstart="onDragStart($event, course)"
-        >
-          <span v-html="displayCourseListe(course)" class="course-available"></span>
-        </div>
+      <div class="col-6">
+        <select v-model="selectedProfessor">
+          <option value="">Professeur</option>
+          <option
+            :value="professor.initiales"
+            v-for="professor in professorsStore.professors"
+            :key="professor.initiales"
+          >
+            {{ professor.initiales }}
+          </option>
+        </select>
+      </div>
+      <div class="col-6">
+        <select v-model="selectedCourse">
+          <option value="">Cours</option>
+          <option
+            :value="matiere.code"
+            v-for="matiere in matieresStore.matieres"
+            :key="matiere.code"
+          >
+            {{ matiere.code }}
+          </option>
+        </select>
+      </div>
+      <div class="col-6">
+        <select v-model="selectedGroup">
+          <option value="">Groupe</option>
+          <option value="1">Groupe 1 / S1</option>
+          <option value="2">Groupe 2 / S1</option>
+          <option value="3">Groupe 3 / S1</option>
+          <option value="4">Groupe 4 / S1</option>
+          <option value="5">Groupe 5 / S1</option>
+          <option value="6">Groupe 6 / S1</option>
+          <option value="7">Groupe 7 / S1</option>
+          <option value="8">Groupe 8 / S1</option>
+          <option value="9">Groupe 1 / S3</option>
+          <option value="10">Groupe 2 / S3</option>
+          <option value="11">Groupe 3 / S3</option>
+          <option value="12">Groupe 4 / S3</option>
+          <option value="13">Groupe 5 / S3</option>
+          <option value="14">Groupe 6 / S3</option>
+          <option value="15">Groupe 7 / S3</option>
+          <option value="16">Groupe 8 / S3</option>
+          <option value="17">Groupe 1 / S5</option>
+          <option value="18">Groupe 2 / S5</option>
+          <option value="19">Groupe 3 / S5</option>
+          <option value="20">Groupe 4 / S5</option>
+          <option value="21">Groupe 5 / S5</option>
+          <option value="22">Groupe 6 / S5</option>
+          <option value="23">Groupe 7 / S5</option>
+          <option value="24">Groupe 8 / S5</option>
+        </select>
+      </div>
+      <div class="col-6"></div>
+      <div class="col-6">
+        <button @click="resetFilters">Reset</button>
       </div>
     </div>
+    <div class="list-group grid-container-available">
+      <div
+        v-for="course in filteredCourses"
+        :key="course.id"
+        class="list-group-item grid-item-available"
+        :style="{
+          gridColumn: `span ${course.groupCount}`,
+          backgroundColor: course.color,
+          cursor: 'move'
+        }"
+        draggable="true"
+        @dragstart="onDragStart($event, course)"
+      >
+        <span v-html="displayCourseListe(course)" class="course-available"></span>
+      </div>
+    </div>
+  </div>
 
   <div class="col-12">
-    <h2>Cours à replacer ({{coursesToReplace.length}})</h2>
-    <div class="list-group grid-container-replace"
-         @dragover.prevent
-         @drop="onDropToReplace"
-    >
+    <h2>Cours à replacer ({{ coursesToReplace.length }})</h2>
+    <div class="list-group grid-container-replace" @dragover.prevent @drop="onDropToReplace">
       <div
         v-for="course in coursesToReplace"
         :key="course.id"
@@ -190,6 +211,21 @@
         <span v-html="displayCourseListe(course)" class="course-replace"></span>
         <span>Semaine d'origine: {{ course.originalWeek }}</span>
       </div>
+    </div>
+  </div>
+
+  <!-- Modal for editing room -->
+  <div v-if="isModalOpen" class="modal">
+    <div class="modal-content">
+      <span class="close" @click="closeModal">&times;</span>
+      <h2>Modifier la salle</h2>
+      {{ modalCourse.id}}
+      <p><strong>Cours:</strong> {{ modalCourse.name }}</p>
+      <p><strong>Professeur:</strong> {{ modalCourse.professor }}</p>
+      <p><strong>Créneau:</strong> {{ modalCourse.day }} {{ modalCourse.time }}</p>
+      <label for="room">Salle:</label>
+      <input type="text" v-model="modalCourse.room" id="room" />
+      <button @click="saveRoom">Enregistrer</button>
     </div>
   </div>
 </template>
@@ -224,6 +260,15 @@ const matieresStore = useMatieresStore()
 const coursesToReplace = ref([])
 const constraints = ref({})
 
+const isModalOpen = ref(false)
+const modalCourse = ref({
+  name: '',
+  professor: '',
+  day: '',
+  time: '',
+  room: '',
+  id: ''
+})
 
 onMounted(async () => {
   try {
@@ -236,13 +281,45 @@ onMounted(async () => {
     const response = await fetch('/constraints.json')
     constraints.value = await response.json()
     console.log(constraints.value)
-
   } catch (error) {
     console.error('Error loading JSON:', error)
   }
 })
 
 const isSidebarOpen = ref(false)
+
+const openModal = (course) => {
+  console.log(course)
+  modalCourse.value = { ...course }
+  console.log(modalCourse.value)
+  isModalOpen.value = true
+}
+
+const closeModal = () => {
+  isModalOpen.value = false
+}
+
+const saveRoom = () => {
+  console.log(modalCourse.value)
+  // Find the course in placedCourses and update the room
+  const courseKey = `${modalCourse.value.day}_${modalCourse.value.time}_${modalCourse.value.group}_${modalCourse.value.groupIndex}`
+  console.log(courseKey)
+  console.log(placedCourses.value[courseKey])
+  placedCourses.value[courseKey].room = modalCourse.value.room
+
+  // mise à jour de la salle dans l'API
+  fetch(baseUrl + '/update-room/'+modalCourse.value.id, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      room: modalCourse.value.room
+    })
+  })
+
+  closeModal()
+}
 
 const toggleSidebar = () => {
   isSidebarOpen.value = !isSidebarOpen.value
@@ -264,7 +341,7 @@ const displayCourse = (course) => {
   if (course.blocked === true) {
     return course.name
   }
-  return `${course.name} <br> ${course.professor} <br> ${course.room}`
+  return `${course.name} <br> ${course.professor} <br>`
 }
 
 const displayCourseListe = (course) => {
@@ -272,7 +349,10 @@ const displayCourseListe = (course) => {
   if (course.groupCount === 1) {
     groupe = 'TP ' + String.fromCharCode(64 + course.groupIndex)
   } else if (course.groupCount === 2) {
-    groupe = 'TD ' + String.fromCharCode(64 + course.groupIndex) + String.fromCharCode(65 + course.groupIndex)
+    groupe =
+      'TD ' +
+      String.fromCharCode(64 + course.groupIndex) +
+      String.fromCharCode(65 + course.groupIndex)
   } else {
     groupe = 'CM'
   }
@@ -287,13 +367,15 @@ const resetFilters = () => {
   selectedGroup.value = ''
 }
 
-const _getSemaines = async(numSemaine) => {
+const _getSemaines = async (numSemaine) => {
   const data = await fetch(baseUrl + '/get-semaine/' + numSemaine).then((res) => res.json())
 
   restrictedSlots.value = data.restrictedSlots
   days.value = data.days
 
-  placedCourses.value = await fetch(baseUrl + '/get-placed-courses/' + numSemaine).then((res) => res.json())
+  placedCourses.value = await fetch(baseUrl + '/get-placed-courses/' + numSemaine).then((res) =>
+    res.json()
+  )
 
   Object.keys(placedCourses.value).forEach(async (key) => {
     const course = await placedCourses.value[key]
@@ -305,8 +387,10 @@ const _getSemaines = async(numSemaine) => {
   applyRestrictions()
 }
 
-const _getCours = async(numSemaine) => {
-  availableCourses.value = await fetch(baseUrl + '/get-cours-semaine/' + numSemaine).then((res) => res.json())
+const _getCours = async (numSemaine) => {
+  availableCourses.value = await fetch(baseUrl + '/get-cours-semaine/' + numSemaine).then((res) =>
+    res.json()
+  )
 }
 
 const loadWeek = async () => {
@@ -314,7 +398,6 @@ const loadWeek = async () => {
     verifyAndResetGrid() // on remet la grille en état
     await _getSemaines(currentWeek.value)
     await _getCours(currentWeek.value)
-
   } catch (error) {
     console.error('Error loading JSON:', error)
   }
@@ -362,8 +445,34 @@ const onDrop = (event, day, time, semestre, groupNumber) => {
       course.time = time
       course.day = day
       course.blocked = false
+      course.room = 'A définir'
+
+      const response = fetch(baseUrl + '/place-course', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          //courseId: course.id, => id des éléments à placer ?
+          matiere: course.name,
+          professor: course.professor,
+          day: day,
+          time: time,
+          semestre: semestre,
+          groupIndex: groupNumber,
+          groupCount: groupSpan,
+          week: currentWeek.value,
+          color: course.color
+        })
+      }).then((res) => res.json())
+
+      // on récupère l'id renvoyé par le serveur pour le cours placé et on ajoute
+      // cette propriété à l'objet course pour pouvoir le supprimer de la liste des cours à replacer
+      response.then((data) => {
+        course.id = data.id
+      })
+
       placedCourses.value[`${day}_${time}_${semestre}_${groupNumber}`] = course
-      console.log(placedCourses.value)
       availableCourses.value.splice(courseIndex, 1)
     }
   }
@@ -426,8 +535,6 @@ const removeCourse = (day, time, semestre, groupNumber, groupSpan) => {
   }
 }
 
-
-
 const applyRestrictions = () => {
   // blcoage du créneau de 12h30, tous les jours, pour tous les groupes
   days.value.forEach((day) => {
@@ -438,7 +545,6 @@ const applyRestrictions = () => {
       })
     })
   })
-
 
   restrictedSlots.value.forEach((slot) => {
     const { type, slot: timeSlot, semester, days, groups, period, motif } = slot
@@ -520,8 +626,6 @@ const highlightValidCells = (course) => {
   })
 }
 
-
-
 // const highlightValidCells = (course) => {
 //   const { group, groupIndex, groupCount, professor } = course
 //   days.value.forEach((day) => {
@@ -548,7 +652,6 @@ const clearHighlight = () => {
   const highlightedMandatoryCells = document.querySelectorAll('.highlight-mandatory')
   highlightedMandatoryCells.forEach((cell) => {
     cell.classList.remove('highlight-mandatory')
-
   })
 
   const highlightedOptionalCells = document.querySelectorAll('.highlight-optional')
@@ -596,8 +699,10 @@ const highlightSameCourses = (day, time, semestre, groupNumber) => {
     const highlightValue = selectedHighlightType.value === 'course' ? course.name : course.professor
     Object.keys(placedCourses.value).forEach((key) => {
       if (
-        (selectedHighlightType.value === 'course' && placedCourses.value[key].name === highlightValue) ||
-        (selectedHighlightType.value === 'professor' && placedCourses.value[key].professor === highlightValue)
+        (selectedHighlightType.value === 'course' &&
+          placedCourses.value[key].name === highlightValue) ||
+        (selectedHighlightType.value === 'professor' &&
+          placedCourses.value[key].professor === highlightValue)
       ) {
         const cell = document.querySelector(`[data-key="${key}"]`)
         if (cell) {
@@ -616,8 +721,10 @@ const clearSameCoursesHighlight = (day, time, semestre, groupNumber) => {
     const highlightValue = selectedHighlightType.value === 'course' ? course.name : course.professor
     Object.keys(placedCourses.value).forEach((key) => {
       if (
-        (selectedHighlightType.value === 'course' && placedCourses.value[key].name === highlightValue) ||
-        (selectedHighlightType.value === 'professor' && placedCourses.value[key].professor === highlightValue)
+        (selectedHighlightType.value === 'course' &&
+          placedCourses.value[key].name === highlightValue) ||
+        (selectedHighlightType.value === 'professor' &&
+          placedCourses.value[key].professor === highlightValue)
       ) {
         const cell = document.querySelector(`[data-key="${key}"]`)
         if (cell) {
@@ -715,7 +822,7 @@ const clearSameCoursesHighlight = (day, time, semestre, groupNumber) => {
 .sidebar-toggle {
   position: fixed;
   top: 50%;
-  width:80px;
+  width: 80px;
   right: 0;
   transform: translateY(-50%);
   background-color: #007bff;
@@ -772,5 +879,40 @@ const clearSameCoursesHighlight = (day, time, semestre, groupNumber) => {
 
 .grid-cell.highlight-optional {
   background-color: #ffffcc; /* Jaune pour les contraintes facultatives */
+}
+
+.modal {
+  display: block;
+  position: fixed;
+  z-index: 1;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgb(0, 0, 0);
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+.modal-content {
+  background-color: #fefefe;
+  margin: 15% auto;
+  padding: 20px;
+  border: 1px solid #888;
+  width: 80%;
+}
+
+.close {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+  color: black;
+  text-decoration: none;
+  cursor: pointer;
 }
 </style>

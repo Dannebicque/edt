@@ -6,7 +6,7 @@ import axios from 'axios'
 const selectedProfessor = ref('')
 const selectedWeek = ref('')
 const days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi']
-const timeSlots = ref(['8h00', '9h30', '11h00', '12h30', '14h00', '15h30', '17h00'])
+const timeSlots = ref(['8h00', '9h30', '11h00', '14h00', '15h30', '17h00'])
 const constraints = ref({})
 const weeks = ref([]) // This will hold the available weeks
 const showConfigPanel = ref(false)
@@ -129,32 +129,42 @@ onMounted(() => {
 
 <template>
   <div>
-    <label for="professor-select">Choisir un professeur :</label>
-    <select v-model="selectedProfessor">
-      <option value="">Professeur</option>
-      <option
-        :value="professor.initiales"
-        v-for="professor in professorsStore.professors"
-        :key="professor.initiales"
-      >
-        {{ professor.initiales }}
-      </option>
-    </select>
-
-    <label for="week-select">Choisir une semaine :</label>
-    <select class="form-select d-block" v-model="selectedWeek" @change="loadWeek">
-      <option v-for="n in weeks" :key="n.week" :value="n">Semaine {{ n.week }} ({{n.jours['Lundi']}}) </option>
-    </select>
+    <div class="row">
+      <div class="col-6 d-grid">
+        <label for="professor-select">Choisir un professeur :</label>
+        <select class="form-select d-block" v-model="selectedProfessor">
+          <option value="">Professeur</option>
+          <option
+            :value="professor.initiales"
+            v-for="professor in professorsStore.professors"
+            :key="professor.initiales"
+          >
+            {{ professor.initiales }}
+          </option>
+        </select>
+      </div>
+      <div class="col-6 d-grid">
+        <label for="week-select">Choisir une semaine :</label>
+        <select class="form-select d-block" v-model="selectedWeek" @change="loadWeek">
+          <option v-for="n in weeks" :key="n.week" :value="n">Semaine {{ n.week }} ({{n.jours['Lundi']}}) </option>
+        </select>
+      </div>
+    </div>
 
     <div v-if="!isSelectionValid" class="warning">
       <p>Veuillez sélectionner un professeur et une semaine pour afficher la grille.</p>
     </div>
-
     <div v-else>
-      <div class="counters">
-        <p>Créneaux disponibles: {{ availableCount }}</p>
-        <p>Indisponible strict: {{ mandatoryCount }}</p>
-        <p>Indisponible facultatif: {{ optionalCount }}</p>
+      <div class="row mt-2">
+        <div class="col-4">
+          <p>Créneaux disponibles: {{ availableCount }}</p>
+        </div>
+        <div class="col-4">
+          <p>Indisponible strict: {{ mandatoryCount }}</p>
+        </div>
+        <div class="col-4">
+          <p>Indisponible facultatif: {{ optionalCount }}</p>
+        </div>
       </div>
 
       <div class="grid-container">
