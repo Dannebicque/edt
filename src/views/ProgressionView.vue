@@ -41,31 +41,32 @@
     </div>
 
     <!-- Data Rows -->
-    <div v-for="(row, index) in rows" :key="index" class="grid-row">
-      <select v-model="row.selectedSubject">
+    <div v-for="(row, index) in progressions" :key="index" class="grid-row">
+      <select v-model="row.matiere" @change="updateProgression(row)">
         <option value=""></option>
         <option :value="matiere.code" v-for="matiere in matieresStore.matieres" :key="matiere.code">
           {{ matiere.code }}
         </option>
       </select>
-      <select v-model="row.selectedProfessor">
+      <select v-model="row.professeur" @change="updateProgression(row)">
         <option value=""></option>
         <option :value="professor.initiales" v-for="professor in professorsStore.professors" :key="professor.initiales">
           {{ professor.initiales }}
         </option>
       </select>
-      <input type="number" v-model="row.cmNb" />
-      <input type="number" v-model="row.tdNb" />
-      <input type="text" v-model="row.tdGroups" />
-      <input type="number" v-model="row.tpNb" />
-      <input type="text" v-model="row.tpGroups" />
+      <input type="number" v-model.lazy="row.nbCm" @change="updateProgression(row)" />
+      <input type="number" v-model.lazy="row.nbTd" @change="updateProgression(row)" />
+      <input type="text" v-model.lazy="row.grTd" @change="updateProgression(row)" />
+      <input type="number" v-model.lazy="row.nbTp" @change="updateProgression(row)" />
+      <input type="text" v-model.lazy="row.grTp" @change="updateProgression(row)" />
       <div>
         <span v-if="isOkRow(row)" class="badge bg-success">OK</span>
         <span v-else class="badge bg-danger">KO</span>
-
       </div>
       <div v-for="week in 5" :key="week">
-        <input type="text" v-model="row.weekSessions[week]" />
+        <input type="text" v-model.lazy="row.progression[week]"
+               @input="toUpperCase(row, week)"
+               @change="updateProgression(row)" />
       </div>
     </div>
 
@@ -81,56 +82,71 @@
       <div>etat</div>
       <div v-for="week in 5" :key="week"></div>
     </div>
+    <button @click="addRow">Ajouter une ligne</button>
+
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useProfessorsStore } from '@/stores/professors'
 import { useMatieresStore } from '@/stores/matieres'
+import { useProgressionsStore } from '@/stores/progressions'
 
 const professorsStore = useProfessorsStore()
 const matieresStore = useMatieresStore()
+const progressionsStore = useProgressionsStore()
+
+const progressions = ref([])
 
 onMounted(async () => {
   try {
     // Load data
     await professorsStore.fetchProfessors()
     await matieresStore.fetchMatieres()
+    await progressionsStore.fetchProgressions()
+
+    progressions.value = progressionsStore.progressions
+    console.log(progressions.value)
   } catch (error) {
     console.error('Error loading data:', error)
   }
 })
 
-const isOkRow = (row) => {
-  // vérifier si sur les semaines, il y a l'ensemble des séances de CM, TD et TP de planifiées
+const addRow = () => {
+  //ajout dans l'API et récupération de l'id puis ajout dans le store
+  const newId = progressionsStore.addProgression({ matiere: '', professeur: '', nbCm: 0, nbTd: 0, grTd: '', nbTp: 0, grTp: '', progression: Array(5).fill('') })
 
-  // calcul du nombre de sessions de chaque type
-  const cmSessions = row.weekSessions.filter(session => session.includes('CM')).length
-  const tdSessions = row.weekSessions.filter(session => session.includes('TD')).length
-  const tpSessions = row.weekSessions.filter(session => session.includes('TP')).length
-
-  // vérification
-  return cmSessions == row.cmNb && tdSessions == row.tdNb && tpSessions == row.tpNb
+  console.log(newId)
 }
 
-const rows = ref(Array.from({ length: 5 }, () => ({
-  selectedSubject: '',
-  selectedProfessor: '',
-  cmNb: 0,
-  cmGroups: 'all',
-  tdNb: 0,
-  tdGroups: 'AB,CD,EF,GH',
-  tpNb: 0,
-  tpGroups: 'A,B,C,D,E,F,G,H',
-  weekSessions: Array(5).fill(''),
-  get totalHours() {
-    return this.cmHours + this.tdHours + this.tpHours
+const updateProgression = async (row) => {
+  console.log(row)
+  try {
+    await progressionsStore.updateProgression(row)
+  } catch (error) {
+    console.error('Error updating progression:', error)
   }
-})))
+}
+
+const isOkRow = (row) => {
+  // vérifier si sur les semaines, il y a l'ensemble des séances de CM, TD et TP de planifiées
+console.log(row)
+  // calcul du nombre de sessions de chaque type
+  const cmSessions = row.progression.filter(session => (session !== null && session.includes('CM'))).length
+  const tdSessions = row.progression.filter(session => (session !== null && session.includes('TD'))).length
+  const tpSessions = row.progression.filter(session => (session !== null && session.includes('TP'))).length
+
+  // vérification
+  return cmSessions == row.nbCm && tdSessions == row.nbTd && tpSessions == row.nbTp
+}
 
 const sumColumn = (type) => {
-  return rows.value.reduce((sum, row) => sum + row[`${type}Hours`] * row[`${type}Nb`], 0)
+  return progressions.value.reduce((sum, row) => sum + row[`${type}Hours`] * row[`${type}Nb`], 0)
+}
+
+const toUpperCase = (row, week) => {
+  row.progression[week] = row.progression[week].trim().toUpperCase()
 }
 </script>
 
