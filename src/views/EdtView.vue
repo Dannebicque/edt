@@ -408,7 +408,7 @@ const verifyAndResetGrid = () => {
   Object.keys(placedCourses.value).forEach((key) => {
     const course = placedCourses.value[key]
     if (course.blocked === false) {
-      removeCourse(course.day, course.time, course.group, course.groupIndex, course.groupCount)
+      removeCourse(course.day, course.time, course.group, course.groupIndex, course.groupCount, true)
     }
   })
 }
@@ -508,7 +508,7 @@ const onDropToReplace = (event) => {
   }
 }
 
-const removeCourse = (day, time, semestre, groupNumber, groupSpan) => {
+const removeCourse = (day, time, semestre, groupNumber, groupSpan, changeSemaine = false) => {
   const courseKey = `${day}_${time}_${semestre}_${groupNumber}`
   const course = placedCourses.value[courseKey]
   const currentCell = document.querySelector(`[data-key="${courseKey}"]`)
@@ -532,19 +532,22 @@ const removeCourse = (day, time, semestre, groupNumber, groupSpan) => {
       parent.insertBefore(cell, currentCell.nextSibling)
     }
 
-    //mise à jour de la base de données
-    fetch(baseUrl + '/remove-course/' + course.id, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        week: currentWeek.value
+    if (!changeSemaine) {
+      //mise à jour de la base de données
+      fetch(baseUrl + '/remove-course/' + course.id, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          week: currentWeek.value
+        })
       })
-    })
+      course.id = null
+      availableCourses.value.push(course)
+    }
 
-    course.id = null
-    availableCourses.value.push(course)
+
   }
 }
 
