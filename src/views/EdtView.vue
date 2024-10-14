@@ -219,7 +219,7 @@
     <div class="modal-content">
       <span class="close" @click="closeModal">&times;</span>
       <h2>Modifier la salle</h2>
-      {{ modalCourse.id}}
+      {{ modalCourse.id }}
       <p><strong>Cours:</strong> {{ modalCourse.name }}</p>
       <p><strong>Professeur:</strong> {{ modalCourse.professor }}</p>
       <p><strong>Créneau:</strong> {{ modalCourse.day }} {{ modalCourse.time }}</p>
@@ -308,7 +308,7 @@ const saveRoom = () => {
   placedCourses.value[courseKey].room = modalCourse.value.room
 
   // mise à jour de la salle dans l'API
-  fetch(baseUrl + '/update-room/'+modalCourse.value.id, {
+  fetch(baseUrl + '/update-room/' + modalCourse.value.id, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -516,7 +516,6 @@ const removeCourse = (day, time, semestre, groupNumber, groupSpan) => {
   if (course) {
     course.time = null
     course.day = null
-    availableCourses.value.push(course)
     currentCell.style = ''
     currentCell.classList.remove('highlight-same-course')
 
@@ -532,6 +531,20 @@ const removeCourse = (day, time, semestre, groupNumber, groupSpan) => {
       const parent = currentCell.parentNode
       parent.insertBefore(cell, currentCell.nextSibling)
     }
+
+    //mise à jour de la base de données
+    fetch(baseUrl + '/remove-course/' + course.id, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        week: currentWeek.value
+      })
+    })
+
+    course.id = null
+    availableCourses.value.push(course)
   }
 }
 
