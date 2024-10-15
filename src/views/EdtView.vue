@@ -454,15 +454,9 @@ const onDrop = (event, day, time, semestre, groupNumber) => {
         },
         body: JSON.stringify({
           //courseId: course.id, => id des éléments à placer ?
-          matiere: course.name,
-          professor: course.professor,
-          day: day,
           time: time,
-          semestre: semestre,
-          groupIndex: groupNumber,
-          groupCount: groupSpan,
+          id: course.id,
           week: currentWeek.value,
-          color: course.color
         })
       }).then((res) => res.json())
 
