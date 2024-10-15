@@ -34,7 +34,7 @@
       <input type="number" placeholder="Gr. TD" />
       <input type="number" placeholder="Nb TP" />
       <input type="number" placeholder="Gr. TP" />
-      <input type="number" placeholder="etat" />
+      <input type="number" placeholder="Etat" />
       <div v-for="week in 5" :key="week">
         <input type="text" placeholder="Filtrer semaine" />
       </div>
@@ -83,7 +83,6 @@
       <div v-for="week in 5" :key="week"></div>
     </div>
     <button @click="addRow">Ajouter une ligne</button>
-
   </div>
 </template>
 
@@ -107,7 +106,6 @@ onMounted(async () => {
     await progressionsStore.fetchProgressions()
 
     progressions.value = progressionsStore.progressions
-    console.log(progressions.value)
   } catch (error) {
     console.error('Error loading data:', error)
   }
@@ -121,7 +119,6 @@ const addRow = () => {
 }
 
 const updateProgression = async (row) => {
-  console.log(row)
   try {
     await progressionsStore.updateProgression(row)
   } catch (error) {
@@ -130,12 +127,25 @@ const updateProgression = async (row) => {
 }
 
 const isOkRow = (row) => {
+
+  if (!row.progression) return false
+  if (row.nbCm == 0 && row.nbTd == 0 && row.nbTp == 0) return false
+
   // vérifier si sur les semaines, il y a l'ensemble des séances de CM, TD et TP de planifiées
-console.log(row)
-  // calcul du nombre de sessions de chaque type
-  const cmSessions = row.progression.filter(session => (session !== null && session.includes('CM'))).length
-  const tdSessions = row.progression.filter(session => (session !== null && session.includes('TD'))).length
-  const tpSessions = row.progression.filter(session => (session !== null && session.includes('TP'))).length
+  let cmSessions = 0;
+  let tdSessions = 0;
+  let tpSessions = 0;
+
+  // Iterate over each session in the progression array
+  row.progression.forEach(session => {
+    if (session) {
+      session.split(' ').forEach(type => {
+        if (type.includes('CM')) cmSessions++
+        if (type.includes('TD')) tdSessions++
+        if (type.includes('TP')) tpSessions++
+      })
+    }
+  });
 
   // vérification
   return cmSessions == row.nbCm && tdSessions == row.nbTd && tpSessions == row.nbTp

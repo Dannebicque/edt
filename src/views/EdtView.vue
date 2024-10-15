@@ -389,8 +389,8 @@ const _getSemaines = async (numSemaine) => {
 
 const _getCours = async (numSemaine) => {
   availableCourses.value = await fetch(baseUrl + '/get-cours-semaine/' + numSemaine).then((res) =>
-    res.json()
-  )
+    res.json())
+    console.log(availableCourses.value)
 }
 
 const loadWeek = async () => {
