@@ -220,7 +220,7 @@
       <span class="close" @click="closeModal">&times;</span>
       <h2>Modifier la salle</h2>
       {{ modalCourse.id }}
-      <p><strong>Cours:</strong> {{ modalCourse.name }}</p>
+      <p><strong>Cours:</strong> {{ modalCourse.matiere }}</p>
       <p><strong>Professeur:</strong> {{ modalCourse.professor }}</p>
       <p><strong>Créneau:</strong> {{ modalCourse.day }} {{ modalCourse.time }}</p>
       <label for="room">Salle:</label>
@@ -262,7 +262,7 @@ const constraints = ref({})
 
 const isModalOpen = ref(false)
 const modalCourse = ref({
-  name: '',
+  matiere: '',
   professor: '',
   day: '',
   time: '',
@@ -331,7 +331,7 @@ const filteredCourses = computed(() => {
     return (
       (selectedSemester.value === '' || course.group === selectedSemester.value) &&
       (selectedProfessor.value === '' || course.professor === selectedProfessor.value) &&
-      (selectedCourse.value === '' || course.name === selectedCourse.value) &&
+      (selectedCourse.value === '' || course.matiere === selectedCourse.value) &&
       (selectedGroup.value === '' || course.groupIndex === parseInt(selectedGroup.value))
     )
   })
@@ -339,9 +339,9 @@ const filteredCourses = computed(() => {
 
 const displayCourse = (course) => {
   if (course.blocked === true) {
-    return course.name
+    return course.matiere
   }
-  return `${course.name} <br> ${course.professor} <br>`
+  return `${course.matiere} <br> ${course.professor} <br>`
 }
 
 const displayCourseListe = (course) => {
@@ -357,7 +357,7 @@ const displayCourseListe = (course) => {
     groupe = 'CM'
   }
 
-  return `${course.name} <br> ${course.professor} <br> ${course.group} <br> ${groupe}`
+  return `${course.matiere} <br> ${course.professor} <br> ${course.group} <br> ${groupe}`
 }
 
 const resetFilters = () => {
@@ -695,7 +695,7 @@ const assignRoomsAutomatically = () => {
 
       // If no room is available, you can handle it as needed (e.g., log an error)
       if (!roomAssigned) {
-        console.error(`No available room for course ${course.name} at ${timeSlot}`)
+        console.error(`No available room for course ${course.matiere} at ${timeSlot}`)
       }
     }
   })
@@ -706,11 +706,11 @@ const highlightSameCourses = (day, time, semestre, groupNumber) => {
   const course = placedCourses.value[courseKey]
 
   if (course) {
-    const highlightValue = selectedHighlightType.value === 'course' ? course.name : course.professor
+    const highlightValue = selectedHighlightType.value === 'course' ? course.matiere : course.professor
     Object.keys(placedCourses.value).forEach((key) => {
       if (
         (selectedHighlightType.value === 'course' &&
-          placedCourses.value[key].name === highlightValue) ||
+          placedCourses.value[key].matiere === highlightValue) ||
         (selectedHighlightType.value === 'professor' &&
           placedCourses.value[key].professor === highlightValue)
       ) {
@@ -728,11 +728,11 @@ const clearSameCoursesHighlight = (day, time, semestre, groupNumber) => {
   const course = placedCourses.value[courseKey]
 
   if (course) {
-    const highlightValue = selectedHighlightType.value === 'course' ? course.name : course.professor
+    const highlightValue = selectedHighlightType.value === 'course' ? course.matiere : course.professor
     Object.keys(placedCourses.value).forEach((key) => {
       if (
         (selectedHighlightType.value === 'course' &&
-          placedCourses.value[key].name === highlightValue) ||
+          placedCourses.value[key].matiere === highlightValue) ||
         (selectedHighlightType.value === 'professor' &&
           placedCourses.value[key].professor === highlightValue)
       ) {

@@ -24,9 +24,13 @@ export const useProgressionsStore = defineStore('progressions', () => {
           'Content-Type': 'application/ld+json'
         },
         body: JSON.stringify(progression)
-      }).then((res) => res.json())
-      console.log(response)
-      progressions.value.push(response.data)
+      }).then((res) => res.json()).
+        then((data) => {
+          console.log(data)
+          return data
+        })
+      console.log('-'+response)
+      progressions.value.push(response)
     } catch (error) {
       console.error('Error adding progression:', error)
     }
@@ -37,6 +41,8 @@ export const useProgressionsStore = defineStore('progressions', () => {
       await fetch(baseUrl + `/api/progressions/${id}`, {
         method: 'DELETE'
       })
+      console.log('id:'+id)
+      console.log(progressions.value)
       progressions.value = progressions.value.filter((prof) => prof.id !== id)
     } catch (error) {
       console.error('Error deleting progression:', error)

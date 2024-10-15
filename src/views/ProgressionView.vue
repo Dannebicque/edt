@@ -14,6 +14,7 @@
   <div class="grid-container">
     <!-- Header Row with Filters -->
     <div class="grid-header">
+      <div>&nbsp;</div>
       <div>Matière</div>
       <div>Professeur</div>
       <div>nb CM</div>
@@ -27,6 +28,7 @@
 
     <!-- Filter Row -->
     <div class="grid-filters">
+      <div></div>
       <input type="text" placeholder="Filtrer matière" />
       <input type="text" placeholder="Filtrer professeur" />
       <input type="number" placeholder="Nb CM" />
@@ -42,6 +44,7 @@
 
     <!-- Data Rows -->
     <div v-for="(row, index) in progressions" :key="index" class="grid-row">
+      <button @click="confirmDelete(row.id)">Delete</button>
       <select v-model="row.matiere" @change="updateProgression(row)">
         <option value=""></option>
         <option :value="matiere.code" v-for="matiere in matieresStore.matieres" :key="matiere.code">
@@ -111,9 +114,9 @@ onMounted(async () => {
   }
 })
 
-const addRow = () => {
+const addRow = async () => {
   //ajout dans l'API et récupération de l'id puis ajout dans le store
-  const newId = progressionsStore.addProgression({ matiere: '', professeur: '', nbCm: 0, nbTd: 0, grTd: '', nbTp: 0, grTp: '', progression: Array(5).fill('') })
+  const newId = await progressionsStore.addProgression({ matiere: '', professeur: '', nbCm: 0, nbTd: 0, grTd: '', nbTp: 0, grTp: '', progression: Array(5).fill('') })
 
   console.log(newId)
 }
@@ -158,12 +161,18 @@ const sumColumn = (type) => {
 const toUpperCase = (row, week) => {
   row.progression[week] = row.progression[week].trim().toUpperCase()
 }
+
+const confirmDelete = async (id) => {
+  if (confirm('Vous êtes sûr de vouloir supprimer cette progression ?')) {
+    progressions.value = await progressionsStore.deleteProgression(id).then(() => progressionsStore.progressions)
+  }
+}
 </script>
 
 <style scoped>
 .grid-container {
   display: grid;
-  grid-template-columns: repeat(8, 1fr) repeat(5, 1fr);
+  grid-template-columns: repeat(9, 1fr) repeat(5, 1fr);
   gap: 0;
 }
 
