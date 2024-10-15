@@ -75,6 +75,7 @@
 
     <!-- Footer Row with Sums -->
     <div class="grid-footer">
+      <div></div>
       <div>Total</div>
       <div>{{ sumColumn('cm') }}</div>
       <div></div>
