@@ -49,6 +49,14 @@ export const useProgressionsStore = defineStore('progressions', () => {
     }
   }
 
+  const generateSlots = async () => {
+    try {
+      await fetch(baseUrl + `/genere-all-creneaux`, {method: 'GET'})
+    } catch (error) {
+      console.error('Error deleting progression:', error)
+    }
+  }
+
   const updateProgression = async (progression) => {
     try {
       //retirer la clé "id" pour que l'api accepte la requête
@@ -80,6 +88,7 @@ export const useProgressionsStore = defineStore('progressions', () => {
     fetchProgressions,
     addProgression,
     deleteProgression,
-    updateProgression
+    updateProgression,
+    generateSlots
   }
 })

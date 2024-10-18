@@ -118,9 +118,9 @@
       <div class="col-6">
         <select v-model="selectedSemester">
           <option value="">Semestre</option>
-          <option value="s1">Semestre 1</option>
-          <option value="s3">Semestre 3</option>
-          <option value="s5">Semestre 5</option>
+          <option value="S1">Semestre 1</option>
+          <option value="S3">Semestre 3</option>
+          <option value="S5">Semestre 5</option>
         </select>
       </div>
       <div class="col-6">
@@ -236,9 +236,9 @@ import { onMounted, ref, computed } from 'vue'
 const baseUrl = import.meta.env.VITE_BASE_URL
 
 const groupData = ref({
-  s1: [1, 2, 3, 4, 5, 6, 7, 8],
-  s3: [1, 2, 3, 4, 5, 6, 7, 8],
-  s5: [1, 2, 3, 4, 5, 6, 7, 8]
+  S1: [1, 2, 3, 4, 5, 6, 7, 8],
+  S3: [1, 2, 3, 4, 5, 6, 7, 8],
+  S5: [1, 2, 3, 4, 5, 6, 7, 8]
 })
 
 const timeSlots = ref(['8h00', '9h30', '11h00', '12h30', '14h00', '15h30', '17h00'])
@@ -432,6 +432,7 @@ const onDragStart = (event, course) => {
 }
 
 const onDrop = (event, day, time, semestre, groupNumber) => {
+  console.log(day)
   const courseId = event.dataTransfer.getData('courseId')
   const courseIndex = availableCourses.value.findIndex((c) => c.id == courseId)
   const course = availableCourses.value[courseIndex]
@@ -455,6 +456,7 @@ const onDrop = (event, day, time, semestre, groupNumber) => {
         body: JSON.stringify({
           //courseId: course.id, => id des éléments à placer ?
           time: time,
+          day: day,
           id: course.id,
           week: currentWeek.value,
         })
@@ -606,6 +608,7 @@ const isProfessorAvailable = (professor, day, time) => {
 
 const highlightValidCells = (course) => {
   const { group, groupIndex, groupCount, professor } = course
+  console.log(group, groupIndex, groupCount, professor)
   const professorConstraints = constraints.value[professor] || { mandatory: [], optional: [] }
 
   days.value.forEach((day) => {
