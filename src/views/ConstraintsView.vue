@@ -2,9 +2,11 @@
 import { ref, onMounted, watch, computed } from 'vue'
 import { useProfessorsStore } from '@/stores/professors'
 import axios from 'axios'
+import SelectWeek from '@/components/SelectWeek.vue'
+import { useWeeksStore } from '@/stores/weeks.js'
 
 const selectedProfessor = ref('')
-const selectedWeek = ref('')
+const selectedWeek = ref(1)
 const days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi']
 const timeSlots = ref(['8h00', '9h30', '11h00', '14h00', '15h30', '17h00'])
 const constraints = ref({})
@@ -20,28 +22,27 @@ const configDetails = ref({
   duration: 'slot'
 })
 
+const weeksStore = useWeeksStore()
+
+const handleWeekUpdate = (week) => {
+  console.log('Week updated:', week)
+  selectedWeek.value = week
+}
+
 const professorsStore = useProfessorsStore()
 const isSelectionValid = computed(() => selectedProfessor.value && selectedWeek.value)
 
 const availableCount = ref(0)
 const mandatoryCount = ref(0)
 const optionalCount = ref(0)
-const baseUrl = import.meta.env.VITE_BASE_URL
 
-onMounted(() => {
-  professorsStore.fetchProfessors()
-  fetchWeeks()
+onMounted(async () => {
+  await professorsStore.fetchProfessors()
+  await weeksStore.fetchWeeks()
+  weeks.value = weeksStore.weeks
+  selectedWeek.value = weeks.value[0]
 })
 
-const fetchWeeks = async () => {
-  try {
-    const data = await fetch(baseUrl + '/get-all-semaines').then((res) => res.json())
-    weeks.value = data
-    console.log(weeks.value)
-  } catch (error) {
-    console.error('Error fetching weeks:', error)
-  }
-}
 
 const updateCounts = () => {
   availableCount.value = 0
@@ -105,7 +106,6 @@ const fetchConstraints = async (professorId, week) => {
 }
 
 const toggleAllWeeks = () => {
-  console.log(weeks.value)
   if (configDetails.value.weeks.length === Object.values(weeks.value).length) {
     configDetails.value.weeks = []
   } else {
@@ -144,10 +144,7 @@ onMounted(() => {
         </select>
       </div>
       <div class="col-6 d-grid">
-        <label for="week-select">Choisir une semaine :</label>
-        <select class="form-select d-block" v-model="selectedWeek" @change="loadWeek">
-          <option v-for="n in weeks" :key="n.week" :value="n">Semaine {{ n.week }} ({{n.jours['Lundi']}}) </option>
-        </select>
+        <SelectWeek @update:selectedWeek="handleWeekUpdate" />
       </div>
     </div>
 

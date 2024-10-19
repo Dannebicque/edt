@@ -11,6 +11,7 @@ export const useSemestresStore = defineStore('semestres', () => {
       const response = await fetch(baseUrl + '/api/semestres')
       const reponse = await response.json()
       semestres.value = reponse['member']
+      console.log(semestres)
     } catch (error) {
       console.error('Error fetching semestres:', error)
     }

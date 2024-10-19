@@ -126,9 +126,7 @@ onMounted(async () => {
 
 const addRow = async () => {
   //ajout dans l'API et récupération de l'id puis ajout dans le store
-  const newId = await progressionsStore.addProgression({ matiere: '', professeur: '', nbCm: 0, nbTd: 0, grTd: '', nbTp: 0, grTp: '', progression: Array(5).fill('') })
-
-  console.log(newId)
+  const newId = await progressionsStore.addProgression({ professeur: '', nbCm: 0, nbTd: 0, grTd: '', nbTp: 0, grTp: '', progression: Array(5).fill('') })
 }
 
 const updateProgression = async (row) => {
