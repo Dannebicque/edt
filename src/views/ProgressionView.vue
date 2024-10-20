@@ -1,89 +1,141 @@
 <template>
   <div class="row">
     <div class="col-2">
-      <label for="semesterFilter">Semestre</label><br>
+      <label for="semesterFilter">Semestre</label><br />
       <InputText id="semesterFilter" v-model="semesterFilter" placeholder="Filtrer par semestre" />
     </div>
     <div class="col-2">
-      <label for="parcoursFilter">Parcours</label><br>
+      <label for="parcoursFilter">Parcours</label><br />
       <InputText id="parcoursFilter" v-model="parcoursFilter" placeholder="Filtrer par parcours" />
     </div>
     <div class="col-2">
-      <label for="professorFilter">Professeur</label><br>
-      <InputText id="professorFilter" v-model="professorFilter" placeholder="Filtrer par professeur" />
+      <label for="professorFilter">Professeur</label><br />
+      <InputText
+        id="professorFilter"
+        v-model="professorFilter"
+        placeholder="Filtrer par professeur"
+      />
     </div>
     <div class="col-2">
-      <label for="subjectFilter">Matière</label><br>
+      <label for="subjectFilter">Matière</label><br />
       <InputText id="subjectFilter" v-model="subjectFilter" placeholder="Filtrer par matière" />
     </div>
     <div class="col-3">
-      <label for="searchFilter">Recherche</label><br>
+      <label for="searchFilter">Recherche</label><br />
       <InputText id="searchFilter" v-model="searchFilter" placeholder="Recherche libre" />
     </div>
     <div class="col-1">
       <Button label="Annuler" icon="pi pi-times" @click="clearFilters" />
     </div>
   </div>
-  <div class="grid-container">
+  <div class="table-container">
     <!-- Header Row with Filters -->
-    <div class="grid-header">
-      <div>&nbsp;</div>
-      <div>Matière</div>
-      <div>Professeur</div>
-      <div>nb CM</div>
-      <div>nb TD</div>
-      <div>gr TD</div>
-      <div>nb TP</div>
-      <div>gr TP</div>
-      <div>Etat</div>
-      <div v-for="week in 5" :key="week">Semaine {{ week }}</div>
-    </div>
+    <table>
+      <thead>
+        <tr>
+          <th class="fixed-column">&nbsp;</th>
+          <th class="fixed-column">Semestre</th>
+          <th class="fixed-column">Matière</th>
+          <th class="fixed-column">Professeur</th>
+          <th class="fixed-column" style="width:100px">nb CM</th>
+          <th class="fixed-column" style="width:100px">nb TD</th>
+          <th class="fixed-column">gr TD</th>
+          <th class="fixed-column" style="width:100px">nb TP</th>
+          <th class="fixed-column">gr TP</th>
+          <th class="fixed-column">Etat</th>
+          <th v-for="week in weeks" :key="week.week">Semaine {{ week.week }}<br>
+          {{ week.jours['Lundi']}}</th>
+        </tr>
+      </thead>
 
-    <!-- Data Rows -->
-    <div v-for="(row, index) in filteredProgressions" :key="index" class="grid-row">
-      <button @click="confirmDelete(row.id)">Delete</button>
-      <select v-model="row.matiere" @change="updateProgression(row)">
-        <option value=""></option>
-        <option :value="matiere['@id']" v-for="matiere in matieresStore.matieres" :key="matiere.code">
-          {{ matiere.code }}
-        </option>
-      </select>
-      <select v-model="row.professeur" @change="updateProgression(row)">
-        <option value=""></option>
-        <option :value="professor.initiales" v-for="professor in professorsStore.professors" :key="professor.initiales">
-          {{ professor.initiales }}
-        </option>
-      </select>
-      <input type="number" v-model.lazy="row.nbCm" @change="updateProgression(row)" />
-      <input type="number" v-model.lazy="row.nbTd" @change="updateProgression(row)" />
-      <input type="text" v-model.lazy="row.grTd" @change="updateProgression(row)" />
-      <input type="number" v-model.lazy="row.nbTp" @change="updateProgression(row)" />
-      <input type="text" v-model.lazy="row.grTp" @change="updateProgression(row)" />
-      <div>
-        <span v-if="isOkRow(row)" class="badge bg-success">OK</span>
-        <span v-else class="badge bg-danger">KO</span>
-      </div>
-      <div v-for="week in 5" :key="week">
-        <input type="text" v-model.lazy="row.progression[week]"
-               @input="toUpperCase(row, week)"
-               @change="updateProgression(row)" />
-      </div>
-    </div>
-
-    <!-- Footer Row with Sums -->
-    <div class="grid-footer">
-      <div></div>
-      <div></div>
-      <div>Total</div>
-      <div>{{ sumColumn('Cm') }}</div>
-      <div>{{ sumColumn('Td') }}</div>
-      <div></div>
-      <div>{{ sumColumn('Tp') }}</div>
-      <div></div>
-      <div></div>
-
-      <div v-for="week in 5" :key="week"></div>
-    </div>
+      <tbody>
+        <tr v-for="(row, index) in filteredProgressions" :key="index">
+          <td class="fixed-column">
+            <button @click="confirmDelete(row.id)">X</button>
+          </td>
+          <td class="fixed-column">
+            <select v-model="row.semestre" @change="updateProgression(row)">
+              <option value=""></option>
+              <option
+                :value="semestre['@id']"
+                v-for="semestre in semestresStore.semestres"
+                :key="semestre.id"
+              >
+                {{ semestre.nom }}
+              </option>
+            </select>
+          </td>
+          <td class="fixed-column">
+            <select v-model="row.matiere" :disabled="!row.semestre" @change="updateProgression(row)">
+              <option value=""></option>
+              <option
+                :value="matiere['@id']"
+                v-for="matiere in filteredMatieres(row.semestre)"
+                :key="matiere.code"
+              >
+                {{ matiere.code }}
+              </option>
+            </select>
+          </td>
+          <td class="fixed-column">
+            <select v-model="row.professeur" @change="updateProgression(row)">
+              <option value=""></option>
+              <option
+                :value="professor.initiales"
+                v-for="professor in professorsStore.professors"
+                :key="professor.initiales"
+              >
+                {{ professor.initiales }}
+              </option>
+            </select>
+          </td>
+          <td class="fixed-column" style="width:100px">
+            <input type="number" v-model.lazy="row.nbCm" @change="updateProgression(row)" />
+          </td>
+          <td class="fixed-column" style="width:100px">
+            <input type="number" v-model.lazy="row.nbTd" @change="updateProgression(row)" />
+          </td>
+          <td class="fixed-column">
+            <input type="text" v-model.lazy="row.grTd" @change="updateProgression(row)" />
+          </td>
+          <td class="fixed-column" style="width:100px">
+            <input type="number" v-model.lazy="row.nbTp" @change="updateProgression(row)" />
+          </td>
+          <td class="fixed-column">
+            <input type="text" v-model.lazy="row.grTp" @change="updateProgression(row)" />
+          </td>
+          <td class="fixed-column">
+            <span v-if="isOkRow(row)" class="badge bg-success">OK</span>
+            <span v-else class="badge bg-danger">KO</span>
+          </td>
+          <td v-for="week in weeks" :key="week.week"
+              :class="{ 'restricted-cell': isWeekRestricted(row.semestre, week) }">
+            <input
+              type="text"
+              v-model.lazy="row.progression[week]"
+              v-if="!isWeekRestricted(row.semestre, week)"
+              @input="toUpperCase(row, week)"
+              @change="updateProgression(row)"
+            />
+          </td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr>
+          <td class="fixed-column"></td>
+          <td class="fixed-column"></td>
+          <td class="fixed-column"></td>
+          <td class="fixed-column">Total</td>
+          <td class="fixed-column">{{ sumColumn('Cm') }}</td>
+          <td class="fixed-column">{{ sumColumn('Td') }}</td>
+          <td class="fixed-column"></td>
+          <td class="fixed-column">{{ sumColumn('Tp') }}</td>
+          <td class="fixed-column"></td>
+          <td class="fixed-column"></td>
+          <td v-for="week in weeks" :key="week.week"></td>
+        </tr>
+      </tfoot>
+    </table>
     <button @click="addRow">Ajouter une ligne</button>
   </div>
   <div class="row">
@@ -96,14 +148,19 @@ import { ref, onMounted, computed } from 'vue'
 import { useProfessorsStore } from '@/stores/professors'
 import { useMatieresStore } from '@/stores/matieres'
 import { useProgressionsStore } from '@/stores/progressions'
-import InputText   from 'primevue/inputtext'
-import Button      from 'primevue/button'
+import { useSemestresStore} from '@/stores/semestres.js'
+import { useWeeksStore } from '@/stores/weeks'
+import InputText from 'primevue/inputtext'
+import Button from 'primevue/button'
 
 const professorsStore = useProfessorsStore()
 const matieresStore = useMatieresStore()
 const progressionsStore = useProgressionsStore()
+const weeksStore = useWeeksStore()
+const semestresStore = useSemestresStore()
 
 const progressions = ref([])
+const weeks = ref([])
 const semesterFilter = ref('')
 const parcoursFilter = ref('')
 const searchFilter = ref('')
@@ -116,17 +173,43 @@ onMounted(async () => {
     await professorsStore.fetchProfessors()
     await matieresStore.fetchMatieres()
     await progressionsStore.fetchProgressions()
-    console.log(matieresStore.matieres)
+    await weeksStore.fetchWeeks()
+    await semestresStore.fetchSemestres()
 
+    weeks.value = weeksStore.weeks
     progressions.value = progressionsStore.progressions
   } catch (error) {
     console.error('Error loading data:', error)
   }
 })
 
+const isWeekRestricted = (semestre, week) => {
+  // semestre est une IRI, récupérer l'objet depuis semestresStores.semestres
+  semestre = semestresStore.semestres.find((s) => s['@id'] === semestre)
+
+
+  let restrictedSlots = {}
+  restrictedSlots = week.restrictedSlots;
+
+
+  console.log(semestre.nom)
+  console.log(restrictedSlots[semestre])
+
+  if (!semestre || !restrictedSlots[semestre.nom]) return false
+  return true
+}
+
 const addRow = async () => {
   //ajout dans l'API et récupération de l'id puis ajout dans le store
-  const newId = await progressionsStore.addProgression({ professeur: '', nbCm: 0, nbTd: 0, grTd: '', nbTp: 0, grTp: '', progression: Array(5).fill('') })
+  const newId = await progressionsStore.addProgression({
+    professeur: '',
+    nbCm: 0,
+    nbTd: 0,
+    grTd: '',
+    nbTp: 0,
+    grTp: '',
+    progression: Array(5).fill('')
+  })
 }
 
 const updateProgression = async (row) => {
@@ -138,25 +221,24 @@ const updateProgression = async (row) => {
 }
 
 const isOkRow = (row) => {
-
   if (!row.progression) return false
   if (row.nbCm == 0 && row.nbTd == 0 && row.nbTp == 0) return false
 
   // vérifier si sur les semaines, il y a l'ensemble des séances de CM, TD et TP de planifiées
-  let cmSessions = 0;
-  let tdSessions = 0;
-  let tpSessions = 0;
+  let cmSessions = 0
+  let tdSessions = 0
+  let tpSessions = 0
 
   // Iterate over each session in the progression array
-  row.progression.forEach(session => {
+  row.progression.forEach((session) => {
     if (session) {
-      session.split(' ').forEach(type => {
+      session.split(' ').forEach((type) => {
         if (type.includes('CM')) cmSessions++
         if (type.includes('TD')) tdSessions++
         if (type.includes('TP')) tpSessions++
       })
     }
-  });
+  })
 
   // vérification
   return cmSessions == row.nbCm && tdSessions == row.nbTd && tpSessions == row.nbTp
@@ -172,7 +254,9 @@ const toUpperCase = (row, week) => {
 
 const confirmDelete = async (id) => {
   if (confirm('Vous êtes sûr de vouloir supprimer cette progression ?')) {
-    progressions.value = await progressionsStore.deleteProgression(id).then(() => progressionsStore.progressions)
+    progressions.value = await progressionsStore
+      .deleteProgression(id)
+      .then(() => progressionsStore.progressions)
   }
 }
 
@@ -184,13 +268,23 @@ const clearFilters = () => {
   searchFilter.value = ''
 }
 
+const filteredMatieres = (semestre) => {
+  if (!semestre) return []
+  return matieresStore.matieres.filter(matiere => matiere.semestre === semestre)
+}
+
 const filteredProgressions = computed(() => {
-  return progressions.value.filter(row => {
-    const matchesSemester = semesterFilter.value === '' || row.semester.includes(semesterFilter.value)
-    const matchesParcours = parcoursFilter.value === '' || row.parcours.includes(parcoursFilter.value)
-    const matchesProfessor = professorFilter.value === '' || row.professeur.includes(professorFilter.value)
+  return progressions.value.filter((row) => {
+    const matchesSemester =
+      semesterFilter.value === '' || row.semester.includes(semesterFilter.value)
+    const matchesParcours =
+      parcoursFilter.value === '' || row.parcours.includes(parcoursFilter.value)
+    const matchesProfessor =
+      professorFilter.value === '' || row.professeur.includes(professorFilter.value)
     const matchesSubject = subjectFilter.value === '' || row.matiere.includes(subjectFilter.value)
-    const matchesSearch = searchFilter.value === '' || Object.values(row).some(value => value.toString().includes(searchFilter.value))
+    const matchesSearch =
+      searchFilter.value === '' ||
+      Object.values(row).some((value) => value.toString().includes(searchFilter.value))
     return matchesSemester && matchesParcours && matchesProfessor && matchesSubject && matchesSearch
   })
 })
@@ -209,19 +303,27 @@ const generateSlots = async () => {
 </script>
 
 <style scoped>
-.grid-container {
-  display: grid;
-  grid-template-columns: repeat(9, 1fr) repeat(5, 1fr);
-  gap: 0;
+.table-container {
+  overflow-x: auto;
 }
 
-.grid-header, .grid-filters, .grid-row, .grid-footer {
-  display: contents;
+table {
+  width: 100%;
+  border-collapse: collapse;
 }
 
-.grid-header > div, .grid-filters > div, .grid-row > div, .grid-footer > div {
+th, td {
   border: 1px solid #ccc;
   padding: 1px;
   text-align: center;
+}
+
+.fixed-column {
+  width: 100px;
+  background: white;
+}
+
+.restricted-cell {
+  background-color: #ffcccc; /* Light red color for restricted cells */
 }
 </style>

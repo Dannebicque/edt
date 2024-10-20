@@ -26,7 +26,7 @@ const weeksStore = useWeeksStore()
 
 const handleWeekUpdate = (week) => {
   console.log('Week updated:', week)
-  selectedWeek.value = week
+  selectedWeek.value = weeks.value[week]
 }
 
 const professorsStore = useProfessorsStore()

@@ -44,7 +44,11 @@
         <!-- Second Row: Group Headers -->
         <div class="grid-time"></div>
         <template v-for="semestre in semestresStore.semestres" :key="'group-' + semestre.id">
-          <div v-for="group in semestre.listeGroupesTp.split(' ')" :key="semestre + group" class="grid-header">
+          <div
+            v-for="group in semestre.listeGroupesTp.split(' ')"
+            :key="semestre + group"
+            class="grid-header"
+          >
             {{ group }}
           </div>
         </template>
@@ -58,7 +62,9 @@
               :key="time + semestre.nom + group"
               class="grid-cell"
               :style="{
-                backgroundColor: placedCourses[`${day.day}_${time}_${semestre.nom}_${groupToInt(group)}`]
+                backgroundColor: placedCourses[
+                  `${day.day}_${time}_${semestre.nom}_${groupToInt(group)}`
+                ]
                   ? placedCourses[`${day.day}_${time}_${semestre.nom}_${groupToInt(group)}`].color
                   : ''
               }"
@@ -68,27 +74,43 @@
               @dragover.prevent
               :data-key="day.day + '_' + time + '_' + semestre.nom + '_' + groupToInt(group)"
               draggable="true"
-              @dragstart="onDragStart($event, placedCourses[`${day.day}_${time}_${semestre.nom}_${groupToInt(group)}`], 'grid', `${day.day}_${time}_${semestre.nom}_${groupToInt(group)}`)"
-
+              @dragstart="
+                onDragStart(
+                  $event,
+                  placedCourses[`${day.day}_${time}_${semestre.nom}_${groupToInt(group)}`],
+                  'grid',
+                  `${day.day}_${time}_${semestre.nom}_${groupToInt(group)}`
+                )
+              "
               @dragend="clearHighlight"
             >
               <span v-if="placedCourses[`${day.day}_${time}_${semestre.nom}_${groupToInt(group)}`]">
                 <span
                   v-html="
-                    displayCourse(placedCourses[`${day.day}_${time}_${semestre.nom}_${groupToInt(group)}`])
+                    displayCourse(
+                      placedCourses[`${day.day}_${time}_${semestre.nom}_${groupToInt(group)}`]
+                    )
                   "
                 ></span>
                 <span
                   v-if="
-                    placedCourses[`${day.day}_${time}_${semestre.nom}_${groupToInt(group)}`].blocked === false
+                    placedCourses[`${day.day}_${time}_${semestre.nom}_${groupToInt(group)}`]
+                      .blocked === false
                   "
-                  @click="openModal(placedCourses[`${day.day}_${time}_${semestre.nom}_${groupToInt(group)}`])"
+                  @click="
+                    openModal(
+                      placedCourses[`${day.day}_${time}_${semestre.nom}_${groupToInt(group)}`]
+                    )
+                  "
                 >
-                  -{{ placedCourses[`${day.day}_${time}_${semestre.nom}_${groupToInt(group)}`].room }}-
+                  -{{
+                    placedCourses[`${day.day}_${time}_${semestre.nom}_${groupToInt(group)}`].room
+                  }}-
                 </span>
                 <button
                   v-if="
-                    placedCourses[`${day.day}_${time}_${semestre.nom}_${groupToInt(group)}`].blocked === false
+                    placedCourses[`${day.day}_${time}_${semestre.nom}_${groupToInt(group)}`]
+                      .blocked === false
                   "
                   class="remove-btn"
                   @click="
@@ -97,7 +119,8 @@
                       time,
                       semestre.nom,
                       groupToInt(group),
-                      placedCourses[`${day.day}_${time}_${semestre.nom}_${groupToInt(group)}`].groupCount
+                      placedCourses[`${day.day}_${time}_${semestre.nom}_${groupToInt(group)}`]
+                        .groupCount
                     )
                   "
                 >
@@ -293,7 +316,6 @@ onMounted(async () => {
     _getSemaines(currentWeek.value)
     _getCours(currentWeek.value)
 
-
     await professorsStore.fetchProfessors()
     await matieresStore.fetchMatieres()
     const response = await fetch('/constraints.json')
@@ -402,7 +424,8 @@ const _getSemaines = async (numSemaine) => {
 
 const _getCours = async (numSemaine) => {
   availableCourses.value = await fetch(baseUrl + '/get-cours-semaine/' + numSemaine).then((res) =>
-    res.json())
+    res.json()
+  )
 }
 
 const loadWeek = async () => {
@@ -420,7 +443,14 @@ const verifyAndResetGrid = () => {
   Object.keys(placedCourses.value).forEach((key) => {
     const course = placedCourses.value[key]
     if (course.blocked === false) {
-      removeCourse(course.day, course.time, course.group, course.groupIndex, course.groupCount, true)
+      removeCourse(
+        course.day,
+        course.time,
+        course.group,
+        course.groupIndex,
+        course.groupCount,
+        true
+      )
     }
   })
 }
@@ -482,7 +512,7 @@ const handleDropFromAvailableCourses = (courseId, day, time, semestre, groupNumb
           time: time,
           day: day,
           id: course.id,
-          week: currentWeek.value,
+          week: currentWeek.value
         })
       }).then((res) => res.json())
 
@@ -503,7 +533,14 @@ const handleDropFromGrid = (courseId, day, time, semestre, groupNumber, originSl
     const groupSpan = course.groupCount
 
     if (groupNumber <= groupData.value[semestre].length - groupSpan + 1) {
-      removeCourse(course.day, course.time, course.group, course.groupIndex, course.groupCount, true)
+      removeCourse(
+        course.day,
+        course.time,
+        course.group,
+        course.groupIndex,
+        course.groupCount,
+        true
+      )
       mergeCells(day, time, semestre, groupNumber, groupSpan)
       course.time = time
       course.day = day
@@ -519,7 +556,7 @@ const handleDropFromGrid = (courseId, day, time, semestre, groupNumber, originSl
           time: time,
           day: day,
           id: course.id,
-          week: currentWeek.value,
+          week: currentWeek.value
         })
       }).then((res) => res.json())
 
@@ -599,8 +636,6 @@ const removeCourse = (day, time, semestre, groupNumber, groupSpan, changeSemaine
       course.id = null
       availableCourses.value.push(course)
     }
-
-
   }
 }
 
@@ -615,39 +650,55 @@ const applyRestrictions = () => {
     })
   })
 
-  restrictedSlots.value.forEach((slot) => {
-    const { type, slot: timeSlot, semester, days, groups, period, motif } = slot
-
-    days.forEach((day) => {
-      if (type === 'generic') {
-        // dans ce cas tous les semestres, tous les groupes
-        Object.keys(groupData.value).forEach((semester) => {
+  console.log(restrictedSlots.value)
+  Object.keys(restrictedSlots.value).forEach((key) => {
+    restrictedSlots.value[key].forEach((slot) => {
+      const { type, slot: timeSlot, semester, days, groups, period, motif } = slot
+      console.log(days)
+      days.forEach((day) => {
+        if (type === 'generic') {
+          // dans ce cas tous les semestres, tous les groupes
+          Object.keys(groupData.value).forEach((semester) => {
+            groupData.value[semester].forEach((groupNumber) => {
+              blockSlot(day, timeSlot, semester, groupToInt(groupNumber), motif)
+            })
+          })
+        } else if (type === 'semester') {
+          // dans ce cas tous les groupes d'un semestre
           groupData.value[semester].forEach((groupNumber) => {
             blockSlot(day, timeSlot, semester, groupToInt(groupNumber), motif)
           })
-        })
-      } else if (type === 'semester') {
-        // dans ce cas tous les groupes d'un semestre
-        groupData.value[semester].forEach((groupNumber) => {
-          blockSlot(day, timeSlot, semester, groupToInt(groupNumber), motif)
-        })
-      } else if (type === 'group') {
-        groups.forEach((groupNumber) => {
-          blockSlot(day, timeSlot, semester, groupToInt(groupNumber), motif)
-        })
-      } else if (type === 'half-day' || type === 'full-day') {
-        const times =
-          type === 'half-day'
-            ? period === 'morning'
-              ? ['8h00', '9h30', '11h00']
-              : ['14h00', '15h30', '17h00']
-            : ['8h00', '9h30', '11h00', '14h00', '15h30', '17h00']
-        times.forEach((time) => {
-          groupData.value[semester].forEach((groupNumber) => {
-            blockSlot(day, time, semester, groupToInt(groupNumber), motif)
+        } else if (type === 'group') {
+          groups.forEach((groupNumber) => {
+            blockSlot(day, timeSlot, semester, groupToInt(groupNumber), motif)
           })
-        })
-      }
+        } else if (type === 'half-day' || type === 'full-day') {
+          const times =
+            type === 'half-day'
+              ? period === 'morning'
+                ? ['8h00', '9h30', '11h00']
+                : ['14h00', '15h30', '17h00']
+              : ['8h00', '9h30', '11h00', '14h00', '15h30', '17h00']
+
+          if (key === 'all') {
+            times.forEach((time) => {
+              Object.keys(groupData.value).forEach((semester) => {
+                groupData.value[semester].forEach((groupNumber) => {
+                  blockSlot(day, time, semester, groupToInt(groupNumber), motif)
+                })
+              })
+            })
+          } else {
+            console.log(key)
+            console.log(groupData.value)
+            times.forEach((time) => {
+              groupData.value[key].forEach((groupNumber) => {
+                blockSlot(day, time, key, groupToInt(groupNumber), motif)
+              })
+            })
+          }
+        }
+      })
     })
   })
 }
@@ -765,7 +816,8 @@ const highlightSameCourses = (day, time, semestre, groupNumber) => {
   const course = placedCourses.value[courseKey]
 
   if (course) {
-    const highlightValue = selectedHighlightType.value === 'course' ? course.matiere : course.professor
+    const highlightValue =
+      selectedHighlightType.value === 'course' ? course.matiere : course.professor
     Object.keys(placedCourses.value).forEach((key) => {
       if (
         (selectedHighlightType.value === 'course' &&
@@ -787,7 +839,8 @@ const clearSameCoursesHighlight = (day, time, semestre, groupNumber) => {
   const course = placedCourses.value[courseKey]
 
   if (course) {
-    const highlightValue = selectedHighlightType.value === 'course' ? course.matiere : course.professor
+    const highlightValue =
+      selectedHighlightType.value === 'course' ? course.matiere : course.professor
     Object.keys(placedCourses.value).forEach((key) => {
       if (
         (selectedHighlightType.value === 'course' &&
@@ -820,7 +873,7 @@ const groupToInt = (group) => {
 }
 
 .grid-day {
-  grid-column: span v-bind(size+1);
+  grid-column: span v-bind(size + 1);
   background-color: #e19797;
   text-align: center;
   font-weight: bold;
