@@ -563,7 +563,8 @@ const handleDropFromGrid = (courseId, day, time, semestre, groupNumber, originSl
       response.then((data) => {
         course.id = data.id
       })
-      placedCourses.value[originSlot] = null
+
+      delete placedCourses.value[originSlot]
       placedCourses.value[`${day}_${time}_${semestre}_${groupNumber}`] = course
     }
   }
