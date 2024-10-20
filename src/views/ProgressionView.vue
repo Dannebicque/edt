@@ -44,9 +44,39 @@
       <thead>
         <tr>
           <th class="fixed-column" style="width:100px !important;">&nbsp;</th>
-          <th class="fixed-column">Semestre</th>
-          <th class="fixed-column">Matière</th>
-          <th class="fixed-column">Professeur</th>
+          <th
+            class="fixed-column filterable-column"
+            @click="sortByColumn('semestre')"
+            :class="{
+              'sort-active': sortColumn === 'semestre',
+              'sort-asc': sortColumn === 'semestre' && sortOrder === 'asc',
+              'sort-desc': sortColumn === 'semestre' && sortOrder === 'desc'
+            }"
+          >
+            Semestre
+          </th>
+          <th
+            class="fixed-column filterable-column"
+            @click="sortByColumn('matiere')"
+            :class="{
+              'sort-active': sortColumn === 'matiere',
+              'sort-asc': sortColumn === 'matiere' && sortOrder === 'asc',
+              'sort-desc': sortColumn === 'matiere' && sortOrder === 'desc'
+            }"
+          >
+            Matière
+          </th>
+          <th
+            class="fixed-column filterable-column"
+            @click="sortByColumn('professeur')"
+            :class="{
+              'sort-active': sortColumn === 'professeur',
+              'sort-asc': sortColumn === 'professeur' && sortOrder === 'asc',
+              'sort-desc': sortColumn === 'professeur' && sortOrder === 'desc'
+            }"
+          >
+            Professeur
+          </th>
           <th class="fixed-column" style="width: 100px">nb CM</th>
           <th class="fixed-column" style="width: 100px">nb TD</th>
           <th class="fixed-column">gr TD</th>
@@ -202,6 +232,9 @@ const searchFilter = ref('')
 const professorFilter = ref('')
 const subjectFilter = ref('')
 
+const sortColumn = ref('matiere')
+const sortOrder = ref('asc')
+
 onMounted(async () => {
   try {
     // Load data
@@ -213,10 +246,36 @@ onMounted(async () => {
 
     weeks.value = weeksStore.weeks
     progressions.value = progressionsStore.progressions
+    sortProgressions() // Apply default sort
+
   } catch (error) {
     console.error('Error loading data:', error)
   }
 })
+
+const sortByColumn = (column) => {
+  if (sortColumn.value === column) {
+    sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortColumn.value = column
+    sortOrder.value = 'asc'
+  }
+  sortProgressions()
+}
+
+const sortProgressions = () => {
+  console.log(progressions.value)
+  console.log('sortProgressions', sortColumn.value, sortOrder.value)
+  progressions.value.sort((a, b) => {
+    let result = 0
+    if (a[sortColumn.value] < b[sortColumn.value]) {
+      result = -1
+    } else if (a[sortColumn.value] > b[sortColumn.value]) {
+      result = 1
+    }
+    return sortOrder.value === 'asc' ? result : -result
+  })
+}
 
 const duplicateRow = async (row) => {
   try {
@@ -374,5 +433,21 @@ td {
 
 .restricted-cell {
   background-color: #ffcccc; /* Light red color for restricted cells */
+}
+
+.filterable-column {
+  background-color: #e0f7fa; /* Light blue color for filterable columns */
+}
+
+.sort-active {
+  font-weight: bold;
+}
+
+.sort-asc::after {
+  content: ' ▲';
+}
+
+.sort-desc::after {
+  content: ' ▼';
 }
 </style>
