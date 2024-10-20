@@ -26,10 +26,8 @@ export const useProgressionsStore = defineStore('progressions', () => {
         body: JSON.stringify(progression)
       }).then((res) => res.json()).
         then((data) => {
-          console.log(data)
           return data
         })
-      console.log('-'+response)
       progressions.value.push(response)
     } catch (error) {
       console.error('Error adding progression:', error)

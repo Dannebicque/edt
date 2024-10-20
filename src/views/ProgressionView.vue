@@ -2,7 +2,7 @@
   <div class="row">
     <div class="col-2">
       <label for="semesterFilter">Semestre</label><br />
-<!--      <InputText id="semesterFilter" v-model="semesterFilter" placeholder="Filtrer par semestre" />-->
+      <!--      <InputText id="semesterFilter" v-model="semesterFilter" placeholder="Filtrer par semestre" />-->
       <select v-model="semesterFilter" @change="updateProgression(row)">
         <option value=""></option>
         <option
@@ -43,25 +43,42 @@
     <table>
       <thead>
         <tr>
-          <th class="fixed-column">&nbsp;</th>
+          <th class="fixed-column" style="width:100px !important;">&nbsp;</th>
           <th class="fixed-column">Semestre</th>
           <th class="fixed-column">Matière</th>
           <th class="fixed-column">Professeur</th>
-          <th class="fixed-column" style="width:100px">nb CM</th>
-          <th class="fixed-column" style="width:100px">nb TD</th>
+          <th class="fixed-column" style="width: 100px">nb CM</th>
+          <th class="fixed-column" style="width: 100px">nb TD</th>
           <th class="fixed-column">gr TD</th>
-          <th class="fixed-column" style="width:100px">nb TP</th>
+          <th class="fixed-column" style="width: 100px">nb TP</th>
           <th class="fixed-column">gr TP</th>
           <th class="fixed-column">Etat</th>
-          <th v-for="week in weeks" :key="week.week">Semaine {{ week.week }}<br>
-          {{ week.jours['Lundi']}}</th>
+          <th v-for="week in weeks" :key="week.week">
+            Semaine {{ week.week }}<br />
+            {{ week.jours['Lundi'] }}
+          </th>
         </tr>
       </thead>
 
       <tbody>
         <tr v-for="(row, index) in filteredProgressions" :key="index">
           <td class="fixed-column">
-            <button @click="confirmDelete(row.id)">X</button>
+            <ButtonGroup>
+              <Button
+                icon="pi pi-times"
+                severity="danger"
+                size="small"
+                aria-label="Supprimer"
+                @click="confirmDelete(row.id)"
+              />
+              <Button
+                icon="pi pi-copy"
+                @click="duplicateRow(row)"
+                size="small"
+                severity="warn"
+                aria-label="Dupliquer"
+              />
+            </ButtonGroup>
           </td>
           <td class="fixed-column">
             <select v-model="row.semestre" @change="updateProgression(row)">
@@ -76,7 +93,11 @@
             </select>
           </td>
           <td class="fixed-column">
-            <select v-model="row.matiere" :disabled="!row.semestre" @change="updateProgression(row)">
+            <select
+              v-model="row.matiere"
+              :disabled="!row.semestre"
+              @change="updateProgression(row)"
+            >
               <option value=""></option>
               <option
                 :value="matiere['@id']"
@@ -99,16 +120,16 @@
               </option>
             </select>
           </td>
-          <td class="fixed-column" style="width:100px">
+          <td class="fixed-column" style="width: 100px">
             <input type="number" v-model.lazy="row.nbCm" @change="updateProgression(row)" />
           </td>
-          <td class="fixed-column" style="width:100px">
+          <td class="fixed-column" style="width: 100px">
             <input type="number" v-model.lazy="row.nbTd" @change="updateProgression(row)" />
           </td>
           <td class="fixed-column">
             <input type="text" v-model.lazy="row.grTd" @change="updateProgression(row)" />
           </td>
-          <td class="fixed-column" style="width:100px">
+          <td class="fixed-column" style="width: 100px">
             <input type="number" v-model.lazy="row.nbTp" @change="updateProgression(row)" />
           </td>
           <td class="fixed-column">
@@ -118,8 +139,11 @@
             <span v-if="isOkRow(row)" class="badge bg-success">OK</span>
             <span v-else class="badge bg-danger">KO</span>
           </td>
-          <td v-for="week in weeks" :key="week.week"
-              :class="{ 'restricted-cell': isWeekRestricted(row.semestre, week) }">
+          <td
+            v-for="week in weeks"
+            :key="week.week"
+            :class="{ 'restricted-cell': isWeekRestricted(row.semestre, week) }"
+          >
             <input
               type="text"
               v-model.lazy="row.progression[week.week]"
@@ -158,10 +182,11 @@ import { ref, onMounted, computed } from 'vue'
 import { useProfessorsStore } from '@/stores/professors'
 import { useMatieresStore } from '@/stores/matieres'
 import { useProgressionsStore } from '@/stores/progressions'
-import { useSemestresStore} from '@/stores/semestres.js'
+import { useSemestresStore } from '@/stores/semestres.js'
 import { useWeeksStore } from '@/stores/weeks'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
+import ButtonGroup from 'primevue/buttongroup'
 
 const professorsStore = useProfessorsStore()
 const matieresStore = useMatieresStore()
@@ -193,12 +218,30 @@ onMounted(async () => {
   }
 })
 
+const duplicateRow = async (row) => {
+  try {
+    // Create a copy of the row
+    const newRow = { ...row, id: undefined }
+    //supprimer les clés @id et @type
+    delete newRow['@id']
+    delete newRow['@type']
+
+    // Call the API to add the new row
+    const newId = await progressionsStore.addProgression(newRow)
+
+    // Add the new row to the local state
+    progressions.value.push({ ...newRow, id: newId })
+  } catch (error) {
+    console.error('Error duplicating row:', error)
+  }
+}
+
 const isWeekRestricted = (semestre, week) => {
   // semestre est une IRI, récupérer l'objet depuis semestresStores.semestres
   semestre = semestresStore.semestres.find((s) => s['@id'] === semestre)
 
   let restrictedSlots = {}
-  restrictedSlots = week.restrictedSlots;
+  restrictedSlots = week.restrictedSlots
 
   if (!semestre || !restrictedSlots[semestre.nom]) return false
   return true
@@ -275,7 +318,7 @@ const clearFilters = () => {
 
 const filteredMatieres = (semestre) => {
   if (!semestre) return []
-  return matieresStore.matieres.filter(matiere => matiere.semestre === semestre)
+  return matieresStore.matieres.filter((matiere) => matiere.semestre === semestre)
 }
 
 const filteredProgressions = computed(() => {
@@ -317,7 +360,8 @@ table {
   border-collapse: collapse;
 }
 
-th, td {
+th,
+td {
   border: 1px solid #ccc;
   padding: 1px;
   text-align: center;
