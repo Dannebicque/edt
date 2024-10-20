@@ -122,9 +122,9 @@
               :class="{ 'restricted-cell': isWeekRestricted(row.semestre, week) }">
             <input
               type="text"
-              v-model.lazy="row.progression[week]"
+              v-model.lazy="row.progression[week.week]"
               v-if="!isWeekRestricted(row.semestre, week)"
-              @input="toUpperCase(row, week)"
+              @input="toUpperCase(row, week.week)"
               @change="updateProgression(row)"
             />
           </td>
