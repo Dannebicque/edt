@@ -2,17 +2,12 @@
   <div class="row">
     <div class="col-2">
       <label for="semesterFilter">Semestre</label><br />
-      <!--      <InputText id="semesterFilter" v-model="semesterFilter" placeholder="Filtrer par semestre" />-->
-      <select v-model="semesterFilter" @change="updateProgression(row)">
-        <option value=""></option>
-        <option
-          :value="semestre['@id']"
-          v-for="semestre in semestresStore.semestres"
-          :key="semestre.id"
-        >
-          {{ semestre.nom }}
-        </option>
-      </select>
+      <Select v-model="semesterFilter"
+              filter
+              :options="semestresStore.semestres"
+              optionLabel="nom"
+              optionValue="@id"
+              placeholder="Choisir un semestre" class="w-full md:w-56" />
     </div>
     <div class="col-2">
       <label for="parcoursFilter">Parcours</label><br />
@@ -27,8 +22,13 @@
       />
     </div>
     <div class="col-2">
-      <label for="subjectFilter">Matière</label><br />
-      <InputText id="subjectFilter" v-model="subjectFilter" placeholder="Filtrer par matière" />
+      <Select v-model="subjectFilter"
+              filter
+              :options="matieresStore.matieres"
+              optionLabel="code"
+              optionValue="@id"
+              placeholder="Choisir une matière" class="w-full md:w-56" />
+
     </div>
     <div class="col-3">
       <label for="searchFilter">Recherche</label><br />
@@ -217,6 +217,8 @@ import { useWeeksStore } from '@/stores/weeks'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 import ButtonGroup from 'primevue/buttongroup'
+import Select from 'primevue/select';
+
 
 const professorsStore = useProfessorsStore()
 const matieresStore = useMatieresStore()
@@ -381,14 +383,16 @@ const filteredMatieres = (semestre) => {
 }
 
 const filteredProgressions = computed(() => {
+  console.log(subjectFilter.value)
   return progressions.value.filter((row) => {
+    console.log(row.matiere)
     const matchesSemester =
       semesterFilter.value === '' || row.semestre.includes(semesterFilter.value)
     const matchesParcours =
       parcoursFilter.value === '' || row.parcours.includes(parcoursFilter.value)
     const matchesProfessor =
       professorFilter.value === '' || row.professeur.includes(professorFilter.value)
-    const matchesSubject = subjectFilter.value === '' || row.matiere.includes(subjectFilter.value)
+    const matchesSubject = subjectFilter.value === '' || (typeof row.matiere !== 'undefined' && row.matiere.includes(subjectFilter.value))
     const matchesSearch =
       searchFilter.value === '' ||
       Object.values(row).some((value) => value.toString().includes(searchFilter.value))
