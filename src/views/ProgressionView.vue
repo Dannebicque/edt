@@ -2,7 +2,17 @@
   <div class="row">
     <div class="col-2">
       <label for="semesterFilter">Semestre</label><br />
-      <InputText id="semesterFilter" v-model="semesterFilter" placeholder="Filtrer par semestre" />
+<!--      <InputText id="semesterFilter" v-model="semesterFilter" placeholder="Filtrer par semestre" />-->
+      <select v-model="semesterFilter" @change="updateProgression(row)">
+        <option value=""></option>
+        <option
+          :value="semestre['@id']"
+          v-for="semestre in semestresStore.semestres"
+          :key="semestre.id"
+        >
+          {{ semestre.nom }}
+        </option>
+      </select>
     </div>
     <div class="col-2">
       <label for="parcoursFilter">Parcours</label><br />
@@ -271,7 +281,7 @@ const filteredMatieres = (semestre) => {
 const filteredProgressions = computed(() => {
   return progressions.value.filter((row) => {
     const matchesSemester =
-      semesterFilter.value === '' || row.semester.includes(semesterFilter.value)
+      semesterFilter.value === '' || row.semestre.includes(semesterFilter.value)
     const matchesParcours =
       parcoursFilter.value === '' || row.parcours.includes(parcoursFilter.value)
     const matchesProfessor =
