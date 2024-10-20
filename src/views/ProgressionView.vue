@@ -187,13 +187,8 @@ const isWeekRestricted = (semestre, week) => {
   // semestre est une IRI, récupérer l'objet depuis semestresStores.semestres
   semestre = semestresStore.semestres.find((s) => s['@id'] === semestre)
 
-
   let restrictedSlots = {}
   restrictedSlots = week.restrictedSlots;
-
-
-  console.log(semestre.nom)
-  console.log(restrictedSlots[semestre])
 
   if (!semestre || !restrictedSlots[semestre.nom]) return false
   return true
